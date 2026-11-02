@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <!-- Seguranca: so scripts do proprio site e do CDN abaixo (com integridade SRI), e conexao so com o Supabase do projeto. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://ruphlnabikvnadlmeisg.supabase.co wss://ruphlnabikvnadlmeisg.supabase.co; img-src 'self' data:; style-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#1e2547">
+  <title>Financeiro | Meu dinheiro</title>
+  <link rel="icon" href="assets/icone.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css?v=0.1.0">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
+  <script src="app.js?v=0.1.0" defer></script>
+</head>
+<body>
+  <div id="bootView" class="boot" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Carregando…</span></div>
+
+  <div id="loginView" class="login-wrap hidden">
+    <form id="loginForm" class="login-card" novalidate>
+      <div class="brand-mark" aria-hidden="true"><img src="assets/icone.svg" alt="" width="44" height="44"></div>
+      <h1>Financeiro</h1>
+      <p class="muted">Seus gastos, contas e categorias em um só lugar.</p>
+      <label>E-mail<input id="email" type="email" required autocomplete="username" inputmode="email"></label>
+      <label>Senha<input id="password" type="password" required autocomplete="current-password"></label>
+      <button id="loginBtn" class="primary full" type="submit">Entrar</button>
+      <p id="loginMessage" class="message" role="alert" aria-live="assertive"></p>
+      <small>Acesso restrito ao titular. Não há cadastro aberto.</small>
+    </form>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.1.0</footer>
+  </div>
+
+  <div id="appView" class="app hidden">
+    <aside class="sidebar" aria-label="Menu principal">
+      <div class="brand"><img src="assets/icone.svg" alt="" width="36" height="36"><div><strong>Financeiro</strong><small>Meu dinheiro</small></div></div>
+      <nav class="nav">
+        <button class="nav-item active" type="button" data-page="inicio" aria-current="page"><span class="nav-ico" aria-hidden="true">◎</span><span>Início</span></button>
+        <button class="nav-item" type="button" data-page="lancamentos"><span class="nav-ico" aria-hidden="true">⇅</span><span>Lançamentos</span></button>
+        <button class="nav-item" type="button" data-page="contas"><span class="nav-ico" aria-hidden="true">▣</span><span>Contas</span></button>
+        <button class="nav-item" type="button" data-page="categorias"><span class="nav-ico" aria-hidden="true">◈</span><span>Categorias</span></button>
+      </nav>
+      <div class="sidebar-bottom">
+        <span id="userEmail" class="user-email"></span>
+        <button id="logoutBtn" class="nav-item" type="button"><span class="nav-ico" aria-hidden="true">↪</span><span>Sair</span></button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div><p id="pageEyebrow" class="eyebrow"></p><h1 id="pageTitle">Início</h1></div>
+        <button id="refreshBtn" class="secondary" type="button" aria-label="Atualizar dados">↻ <span class="hide-sm">Atualizar</span></button>
+      </header>
+      <p id="globalMessage" class="message" role="status" aria-live="polite"></p>
+
+      <section id="inicioPage" class="page" aria-labelledby="pageTitle">
+        <div class="hero">
+          <span class="hero-label">Saldo total</span>
+          <strong id="saldoTotal" class="hero-value">—</strong>
+          <span id="saldoResumo" class="hero-sub"></span>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Saldo por conta</h2></div>
+          <ul id="contasResumo" class="list"></ul>
+        </div>
+      </section>
+
+      <section id="lancamentosPage" class="page hidden">
+        <div class="panel empty-state">
+          <span class="empty-ico" aria-hidden="true">⇅</span>
+          <h2>Lançamentos chegam na próxima etapa</h2>
+          <p class="muted">Aqui você vai registrar, editar e apagar entradas, saídas e transferências, com a lista do mês.</p>
+        </div>
+      </section>
+
+      <section id="contasPage" class="page hidden">
+        <div class="panel"><div class="panel-head"><h2>Contas</h2><span id="contasQtd" class="badge"></span></div><ul id="contasLista" class="list"></ul></div>
+      </section>
+
+      <section id="categoriasPage" class="page hidden">
+        <div class="grid-2">
+          <div class="panel"><div class="panel-head"><h2>Despesas</h2><span id="despesasQtd" class="badge"></span></div><ul id="catDespesas" class="chips"></ul></div>
+          <div class="panel"><div class="panel-head"><h2>Receitas</h2><span id="receitasQtd" class="badge"></span></div><ul id="catReceitas" class="chips"></ul></div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
