@@ -10,8 +10,13 @@ q -c "drop database if exists fin_importacoes" -c "create database fin_importaco
 q -d fin_importacoes -f "$raiz/tests/supabase-simulado.sql"
 # Todas as migracoes menos a do historico; depois, dados "antigos" (importados antes dela); por fim, ela.
 migracoes=("$raiz"/supabase/migrations/*.sql ${IMPORTACOES_SQL:-})
-ultima="${migracoes[-1]}"; [[ "$ultima" == *historico_importacoes* ]] || { echo "migracao do historico deveria ser a ultima"; exit 1; }
-for m in "${migracoes[@]:0:${#migracoes[@]}-1}"; do [[ "$m" == *historico_importacoes* ]] || q -d fin_importacoes -f "$m"; done
+ultima=""; depois=()
+for m in "${migracoes[@]}"; do
+  if [[ "$m" == *historico_importacoes* ]]; then ultima="$m"
+  elif [[ -n "$ultima" ]]; then depois+=("$m")
+  else q -d fin_importacoes -f "$m"; fi
+done
+[[ -n "$ultima" ]] || { echo "migracao do historico nao encontrada"; exit 1; }
 # Usuarios criados depois das migracoes: o gatilho cria as contas e categorias padrao.
 q -d fin_importacoes -c "insert into auth.users (id, email, created_at) values
   ('00000000-0000-0000-0000-0000000000a1','titular@exemplo.com', now() - interval '2 days'),
@@ -22,6 +27,7 @@ q -d fin_importacoes -c "insert into public.lancamentos (usuario_id, tipo, descr
                ('00000000-0000-0000-0000-0000000000a1'::uuid, 2, '2026-10-27', 'b:o2', '2026-11-03 03:55:38.10+00'),
                ('00000000-0000-0000-0000-0000000000a1'::uuid, 3, '2026-09-01', 'b:s1', '2026-11-03 03:58:02.50+00')) x(u, v, d, e, c)"
 q -d fin_importacoes -f "$ultima"
+for m in "${depois[@]}"; do q -d fin_importacoes -f "$m"; done
 
 como() { # papel, usuario, sql
   q -d fin_importacoes -c "begin; set local role $1; select set_config('request.jwt.claim.sub', '$2', true); $3; commit;" 2>&1 | { grep -v "^CONTEXT\|^PL/pgSQL\|^$" || true; } | tail -1; }

@@ -1,0 +1,27 @@
+name: Auditoria semanal
+
+# Toda segunda-feira, 06h37 em Belém/PA (09h37 UTC): confere o site publicado e o Supabase
+# de fora para dentro (scripts/auditoria.sh), só com a chave publicável. Se falhar, o GitHub avisa por e-mail.
+on:
+  schedule:
+    - cron: '37 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  auditoria:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Testes do repositorio
+        run: npm test
+      - name: Site e Supabase publicados
+        run: bash scripts/auditoria.sh

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { montarPacote, linhasLancamentos, agrupar, validarRelatorio, validarMensagens, somarMeses, intervaloMes, mesValido, chaveDescricao } from '../supabase/functions/agente/analise.js';
 import { escolherFornecedor, chamarModelo, conversar, ErroIA, FERRAMENTAS } from '../supabase/functions/agente/ia.js';
-import { tratar, hojeBelem } from '../supabase/functions/agente/agente.js';
+import { tratar, hojeBelem, LIMITE_DIARIO } from '../supabase/functions/agente/agente.js';
 
 // ---------- Datas ----------
 assert.equal(somarMeses('2026-01', -1), '2025-12'); assert.equal(somarMeses('2026-11', -11), '2025-12');
@@ -110,11 +110,17 @@ const c3 = await conversar({ forn: cf, mensagens: [{ role: 'user', content: 'oi'
 assert.deepEqual([c3.resposta, c3.consultas, f4.pedidos.length], ['fim', 5, 6]);
 
 // ---------- Tratador da funcao com banco simulado ----------
-function bancoFalso({ usuarioValido = true } = {}) {
+function bancoFalso({ usuarioValido = true, usosHoje = 0, cotaFalha = false } = {}) {
   const tabelas = { contas, categorias, lancamentos: L };
   const consultas = [];
+  let usos = usosHoje;
   return {
     consultas,
+    get usos() { return usos; },
+    async rpc(nome) {
+      assert.equal(nome, 'consumir_uso_ia');
+      return cotaFalha ? { data: null, error: { message: 'x' } } : { data: ++usos, error: null };
+    },
     auth: { getUser: async t => usuarioValido && t === 'tok-ok' ? { data: { user: { id: 'u1' } }, error: null } : { data: null, error: { message: 'bad' } } },
     from(t) {
       let linhas = [...tabelas[t]]; const reg = { t, filtros: [] }; consultas.push(reg);
@@ -156,6 +162,20 @@ assert.equal((await rodar(pedir({ modo: 'xyz' }))).status, 400);
 assert.equal((await rodar(pedir({ modo: 'relatorio', mes: '2026-13' }))).status, 400);
 const semIA = await rodar(pedir({ modo: 'relatorio' }), { env: { SUPABASE_URL: 'u', SUPABASE_ANON_KEY: 'k' } });
 assert.deepEqual([semIA.status, semIA.corpo.erro], [503, 'O assistente ainda não foi configurado.']);
+
+// Limite diario por pessoa: conta so pedidos validos; acima do limite ou sem conseguir contar, nao chama a IA.
+const bCota = bancoFalso();
+await rodar(pedir({ modo: 'relatorio', mes: '2026-13' }), { banco: bCota });
+await rodar(pedir({ modo: 'chat', mensagens: [] }), { banco: bCota });
+assert.equal(bCota.usos, 0, 'pedido invalido nao gasta cota');
+const fNada = iaFalsa([]);
+const estourou = await rodar(pedir({ modo: 'relatorio' }), { banco: bancoFalso({ usosHoje: LIMITE_DIARIO }), fetchFn: fNada });
+assert.deepEqual([estourou.status, estourou.corpo.codigo], [429, 'cota']);
+const chatEstourou = await rodar(pedir({ modo: 'chat', mensagens: [{ role: 'user', content: 'oi' }] }), { banco: bancoFalso({ usosHoje: LIMITE_DIARIO }), fetchFn: fNada });
+assert.deepEqual([chatEstourou.status, chatEstourou.corpo.codigo], [429, 'cota']);
+const semContar = await rodar(pedir({ modo: 'relatorio' }), { banco: bancoFalso({ cotaFalha: true }), fetchFn: fNada });
+assert.deepEqual([semContar.status, semContar.corpo.codigo], [503, 'cota_indisponivel'], 'sem contador, nao libera');
+assert.equal(fNada.pedidos.length, 0, 'IA nao foi chamada');
 
 // Relatorio: usa o token do usuario (RLS), le 12 meses, valida o JSON e tenta de novo se vier invalido.
 const fRel = iaFalsa([ok({ content: 'Desculpe, não consigo.' }), b => {

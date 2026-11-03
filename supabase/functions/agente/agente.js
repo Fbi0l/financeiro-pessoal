@@ -5,12 +5,22 @@
 // - Só aceita chamadas do site do app (CORS) e corpos pequenos.
 // - As ferramentas da IA são só de leitura e com limites de período e quantidade.
 // - Nenhum dado financeiro é registrado em log.
+// - Cada pessoa tem um limite diário de usos (relatório ou pergunta), contado no banco.
 import { montarPacote, linhasLancamentos, agrupar, validarRelatorio, validarMensagens, mesValido, intervaloMes, somarMeses, mesDe } from './analise.js';
 import { escolherFornecedor, chamarModelo, promptRelatorio, conversar, ErroIA } from './ia.js';
 
 const ORIGENS = ['https://fbi0l.github.io', 'http://localhost:8099'];
 const TAMANHO_MAXIMO = 40000;
 const CAMPOS = 'id,tipo,descricao,valor,data,conta_id,conta_destino_id,categoria_id,pago';
+export const LIMITE_DIARIO = 40;
+
+/** Conta um uso de hoje no banco. Devolve null se pode seguir, ou a resposta de erro. Na dúvida, não libera. */
+async function consumirCota(db, origem) {
+  const { data, error } = await db.rpc('consumir_uso_ia');
+  if (error || !Number.isInteger(data)) return resposta(origem, 503, { erro: 'Não consegui conferir seu limite de uso agora. Tente de novo em instantes.', codigo: 'cota_indisponivel' });
+  if (data > LIMITE_DIARIO) return resposta(origem, 429, { erro: `Você usou o assistente ${LIMITE_DIARIO} vezes hoje, o limite diário por pessoa. Ele volta amanhã.`, codigo: 'cota' });
+  return null;
+}
 
 function cabecalhos(origem) {
   const h = { 'Content-Type': 'application/json; charset=utf-8', 'Vary': 'Origin', 'Cache-Control': 'no-store' };
@@ -76,6 +86,8 @@ export async function tratar(req, { env, criarCliente, fetchFn = fetch, agora = 
     if (corpo.modo === 'relatorio') {
       const mes = corpo.mes || mesDe(hoje);
       if (!mesValido(mes)) return resposta(origem, 400, { erro: 'Mês inválido.' });
+      const semCota = await consumirCota(db, origem);
+      if (semCota) return semCota;
       const { contas, categorias } = await lerTudo(db);
       const inicio = intervaloMes(somarMeses(mes, -11)).inicio, fim = intervaloMes(mes).fim;
       const lancamentos = await lerLancamentos(db, inicio, fim);
@@ -97,6 +109,8 @@ export async function tratar(req, { env, criarCliente, fetchFn = fetch, agora = 
     if (corpo.modo === 'chat') {
       const mensagens = validarMensagens(corpo.mensagens);
       if (!mensagens) return resposta(origem, 400, { erro: 'Escreva uma pergunta.' });
+      const semCota = await consumirCota(db, origem);
+      if (semCota) return semCota;
       const { contas, categorias } = await lerTudo(db);
       const contexto = `Contas: ${contas.filter(x => !x.arquivada).map(x => x.nome).join(', ')}\n` +
         `Categorias de saída: ${categorias.filter(x => x.tipo === 'despesa' && !x.arquivada).map(x => x.nome).join(', ')}\n` +

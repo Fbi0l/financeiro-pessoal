@@ -208,6 +208,15 @@ function linkConvite(base, codigo) {
   return String(base).replace(/[?#].*$/, '') + '?convite=' + encodeURIComponent(codigo);
 }
 
+/* ---------- Saída por inatividade ---------- */
+const INATIVIDADE_MS = 30 * 60 * 1000;
+/** true se a última atividade registrada foi há mais tempo que o limite. Sem registro (ou inválido), não expira. */
+function expirouPorInatividade(ultima, agora, limite = INATIVIDADE_MS) {
+  const t = Number(ultima);
+  if (!Number.isFinite(t) || t <= 0) return false;
+  return agora - t > limite;
+}
+
 /** Texto da IA para exibir como texto puro: tira marcações de Markdown que viriam como símbolos soltos. */
 function textoSimples(s) {
   return String(s ?? '')
@@ -224,7 +233,7 @@ function textoSimples(s) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    textoSimples, codigoDoLink, linkConvite, CORES, lerSaldo, saldoInicialPara, validarConta, validarCategoria, mensagemErroCadastro,
+    textoSimples, codigoDoLink, linkConvite, expirouPorInatividade, INATIVIDADE_MS, CORES, lerSaldo, saldoInicialPara, validarConta, validarCategoria, mensagemErroCadastro,
     formatarMoeda, somarSaldos, corSegura, rotuloTipoConta, mensagemErroLogin, lerValor, valorParaCampo,
     hojeISO, intervaloMes, somarMes, rotuloMes, dataValida, rotuloDia, validarLancamento, montarRegistro,
     totaisLancamentos, agruparPorDia, filtrarLancamentos, mensagemErroBanco
@@ -1177,7 +1186,7 @@ function iniciar() {
     else aviso('loginMessage', '');
   });
   // "local": sai só deste aparelho; os outros continuam conectados.
-  $('logoutBtn').addEventListener('click', async () => { await db.auth.signOut({ scope: 'local' }); });
+  $('logoutBtn').addEventListener('click', async () => { esquecerAtividade(); await db.auth.signOut({ scope: 'local' }); });
   $('refreshBtn').addEventListener('click', carregarDados);
   $('novoBtn').addEventListener('click', () => abrirFormulario());
   document.querySelectorAll('.nav-item[data-page]').forEach(b => b.addEventListener('click', () => irPara(b.dataset.page)));
@@ -1225,6 +1234,26 @@ function iniciar() {
   zona.addEventListener('drop', ev => { ev.preventDefault(); const f = ev.dataTransfer?.files?.[0]; if (f) lerArquivo(f); });
 
   let sessaoAtual = null;
+
+  /* ----- Saída automática depois de 30 minutos sem uso neste aparelho ----- */
+  const ATIVIDADE = 'ultimaAtividade';
+  const lerAtividade = () => { try { return localStorage.getItem(ATIVIDADE); } catch (_) { return null; } };
+  const marcarAtividade = () => { try { localStorage.setItem(ATIVIDADE, String(Date.now())); } catch (_) { /* sem armazenamento */ } };
+  const esquecerAtividade = () => { try { localStorage.removeItem(ATIVIDADE); } catch (_) { /* sem armazenamento */ } };
+  let ultimaMarca = 0;
+  ['pointerdown', 'keydown'].forEach(t => window.addEventListener(t, () => {
+    if (!sessaoAtual || Date.now() - ultimaMarca < 30000) return;
+    ultimaMarca = Date.now(); marcarAtividade();
+  }, { passive: true, capture: true }));
+  async function conferirInatividade() {
+    if (!sessaoAtual || !expirouPorInatividade(lerAtividade(), Date.now())) return false;
+    esquecerAtividade();
+    await db.auth.signOut({ scope: 'local' });
+    aviso('loginMessage', 'Por segurança, você saiu depois de 30 minutos sem usar o app. Entre de novo.', true);
+    return true;
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') conferirInatividade(); });
+  setInterval(() => { if (document.visibilityState === 'visible') conferirInatividade(); }, 60000);
   $('conviteForm').addEventListener('submit', concluirConvite);
   $('conviteIrLogin').addEventListener('click', () => { if ($('conviteIrLogin').onclick) return; conviteAtivo.ligado = false; history.replaceState(null, '', location.pathname); mostrar('loginView'); });
   $('conviteNovoForm').addEventListener('submit', gerarConvite);
@@ -1242,6 +1271,12 @@ function iniciar() {
     // Link de convite aberto: mostra a tela de cadastro em vez do app.
     if (conviteAtivo.ligado) { if (evento === 'INITIAL_SESSION') abrirConvite(session); sessaoAtual = session; return; }
     // Evita recarregar tudo a cada renovação automática do token.
+    if (session && evento === 'INITIAL_SESSION' && expirouPorInatividade(lerAtividade(), Date.now())) {
+      // Abriu o app depois de muito tempo parado: sai antes de mostrar qualquer dado.
+      sessaoAtual = session; conferirInatividade(); return;
+    }
+    if (session && evento === 'SIGNED_IN' && (!sessaoAtual || sessaoAtual.user.id !== session.user.id)) marcarAtividade();
+    if (session && !sessaoAtual) marcarAtividade();
     if (session && (!sessaoAtual || evento === 'SIGNED_IN' && sessaoAtual.user.id !== session.user.id)) entrarNoApp(session);
     if (!session) sairDoApp();
     sessaoAtual = session;

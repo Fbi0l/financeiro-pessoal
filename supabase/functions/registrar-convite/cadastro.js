@@ -103,7 +103,12 @@ export async function tratarCadastro(req, { env, criarCliente, fetchFn = fetch }
         // Não revela se o e-mail já existe.
         return resposta(origem, 400, { erro: 'Não foi possível criar o acesso com este e-mail. Confira o e-mail ou fale com quem convidou você.' });
       }
-      await admin.from('convites').update({ usado_por: criado.user.id }).eq('id', idConvite);
+      // 3) Registra quem usou. A conta já existe, então uma falha aqui não desfaz o cadastro: tenta de novo.
+      for (let tentativa = 1; tentativa <= 3; tentativa++) {
+        const { error: errU } = await admin.from('convites').update({ usado_por: criado.user.id }).eq('id', idConvite);
+        if (!errU) break;
+        if (tentativa === 3) console.error('registrar-convite: convite usado sem registrar quem usou', errU?.code || '');
+      }
       return resposta(origem, 201, { ok: true });
     }
 

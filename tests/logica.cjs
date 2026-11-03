@@ -1,6 +1,6 @@
 // Funcoes puras do app.js: formatacao de moeda, soma de saldos, cores e mensagens de login.
 const assert = require('node:assert/strict');
-const { formatarMoeda, somarSaldos, corSegura, rotuloTipoConta, mensagemErroLogin, textoSimples, codigoDoLink, linkConvite } = require('../app.js');
+const { formatarMoeda, somarSaldos, corSegura, rotuloTipoConta, mensagemErroLogin, textoSimples, codigoDoLink, linkConvite, expirouPorInatividade, INATIVIDADE_MS } = require('../app.js');
 const limpa = s => s.replace(/\s/g, ' ');
 
 assert.equal(limpa(formatarMoeda(1234.5)), 'R$ 1.234,50');
@@ -38,4 +38,10 @@ assert.equal(codigoDoLink('?x=1&convite=' + COD), COD);
 for (const ruim of ['', '?convite=', '?convite=curto', '?convite=' + COD + 'a', '?convite=' + COD.slice(1) + '%3C', '?outro=' + COD]) assert.equal(codigoDoLink(ruim), null, ruim);
 assert.equal(linkConvite('https://fbi0l.github.io/financeiro-pessoal/', COD), 'https://fbi0l.github.io/financeiro-pessoal/?convite=' + COD);
 assert.equal(linkConvite('https://fbi0l.github.io/financeiro-pessoal/?convite=velho#inicio', COD), 'https://fbi0l.github.io/financeiro-pessoal/?convite=' + COD);
+// Saida por inatividade: 30 minutos; sem registro de atividade, nao derruba ninguem.
+assert.equal(INATIVIDADE_MS, 30 * 60 * 1000);
+assert.equal(expirouPorInatividade(String(1e12), 1e12 + INATIVIDADE_MS), false, 'no limite ainda vale');
+assert.equal(expirouPorInatividade(String(1e12), 1e12 + INATIVIDADE_MS + 1), true);
+for (const v of [null, '', 'abc', '0', undefined]) assert.equal(expirouPorInatividade(v, 1e12), false, `sem registro: ${v}`);
+
 console.log('Logica aprovada: moeda, saldos, cores e mensagens de login.');

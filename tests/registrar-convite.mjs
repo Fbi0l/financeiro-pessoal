@@ -26,7 +26,7 @@ assert.equal(await senhaVazada('x', async () => { throw new Error('offline'); })
 const hibpLimpo = async () => ({ ok: true, text: async () => '' });
 
 // Banco e Auth simulados
-function ambiente({ convites, usuarios = ['ja@existe.com'], falharCriacao = false, atraso = 0 }) {
+function ambiente({ convites, usuarios = ['ja@existe.com'], falharCriacao = false, atraso = 0, falhasUsadoPor = 0 }) {
   const criados = [];
   const admin = {
     auth: { admin: { createUser: async ({ email, password, email_confirm }) => {
@@ -45,6 +45,7 @@ function ambiente({ convites, usuarios = ['ja@existe.com'], falharCriacao = fals
         maybeSingle() { const r = convites.filter(passa); return Promise.resolve({ data: r[0] ? { rotulo: r[0].rotulo, expira_em: r[0].expira_em } : null, error: null }); },
         then(res, rej) {
           // update ... returning e atomico (como no Postgres): filtra e altera no mesmo passo.
+          if (acao === 'update' && valores.usado_por && falhasUsadoPor > 0) { falhasUsadoPor--; return Promise.resolve({ data: null, error: { code: 'XX000' } }).then(res, rej); }
           const alvo = convites.filter(passa);
           if (acao === 'update') alvo.forEach(c => Object.assign(c, valores));
           return Promise.resolve({ data: alvo.map(c => ({ id: c.id })), error: null }).then(res, rej);
@@ -112,4 +113,12 @@ const [a, b] = await Promise.all([rodar(pedir({ ...base, email: 'um@x.com' }), a
 assert.deepEqual([a.status, b.status].sort(), [201, 410]); assert.equal(amb.criados.length, 1);
 
 assert.equal((await rodar(pedir({ acao: 'apagar', codigo: CODIGO }), amb)).status, 400);
-console.log('Cadastro por convite aprovado: codigo, CORS, senha (inclusive vazada), uso unico, corrida, e-mail sem revelar e convite devolvido em falha.');
+// A gravacao de quem usou falha duas vezes: tenta de novo, o cadastro vale e o convite fica com o dono certo.
+{
+  const conv = [novoConvite()];
+  const amb = ambiente({ convites: conv, falhasUsadoPor: 2 });
+  const r = await rodar(pedir({ acao: 'cadastrar', codigo: CODIGO, email: 'nova@exemplo.com', senha: 'cavalo-bateria-grampo' }), amb);
+  assert.equal(r.status, 201);
+  assert.equal(conv[0].usado_por, amb.criados[0].user.id, 'quem usou ficou registrado');
+}
+console.log('Cadastro por convite aprovado: codigo, CORS, senha (inclusive vazada), uso unico, corrida, e-mail sem revelar, convite devolvido em falha e registro de quem usou repetido.');

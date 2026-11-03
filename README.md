@@ -2,6 +2,14 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.9.0 — Correções do diagnóstico de segurança
+
+- **Limite diário do assistente por pessoa** (40 usos por dia): ninguém esgota sozinho a cota gratuita da IA. O contador fica no banco, fora da API.
+- **Saída automática** depois de 30 minutos sem usar o app no aparelho.
+- **Texto do convite** explica que quem administra tem acesso técnico ao banco e que o assistente envia dados ao serviço de IA.
+- **Convite não fica preso em "Em uso agora"**: o cadastro repete a gravação de quem usou e, depois de 10 minutos, o convite aparece como usado.
+- **Auditoria semanal** (`scripts/auditoria.sh`, toda segunda às 06h37): confere de fora o site e o Supabase só com a chave publicável.
+
 ## Versão 0.8.3 — Extrato do PicPay
 
 O importador passa a ler o CSV do PicPay (data, hora, tipo, origem / destino, valor e forma de pagamento). A descrição junta o tipo e a origem ou destino ("Compra realizada - PicPay Shop"), e data, hora e valor identificam cada movimento para não duplicar ao importar de novo.

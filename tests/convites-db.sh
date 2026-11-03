@@ -60,5 +60,12 @@ q -d fin_convites -c "update public.convites set criado_em = now() - interval '3
 [[ "$(reservar "$h3")" == "0" ]] && ok "convite vencido nao funciona" || erro "vencido reservado" ""
 [[ "$(como authenticated $U1 "select situacao from public.listar_convites() where id = '$id3'")" == "vencido" ]] && ok "lista mostra vencido" || erro "situacao vencido" ""
 
+# Reservado sem registrar quem usou: "em uso" por 10 minutos, depois aparece como usado.
+r4="$(como authenticated $U1 "select codigo || '|' || id from public.criar_convite()")"; id4="${r4#*|}"
+q -d fin_convites -c "update public.convites set usado_em = now() where id = '$id4'"
+[[ "$(como authenticated $U1 "select situacao from public.listar_convites() where id = '$id4'")" == "em_uso" ]] && ok "reservado agora aparece em uso" || erro "situacao em uso" ""
+q -d fin_convites -c "update public.convites set usado_em = now() - interval '20 minutes' where id = '$id4'"
+[[ "$(como authenticated $U1 "select situacao from public.listar_convites() where id = '$id4'")" == "usado" ]] && ok "em uso nao fica preso" || erro "em uso preso" ""
+
 q -c "drop database fin_convites"
 [[ $falha == 0 ]] && echo "Convites aprovados no banco." || { echo "Convites com falha."; exit 1; }
