@@ -732,6 +732,37 @@ function iniciar() {
     $('agLimpar').classList.add('hidden');
   }
 
+  /* ----- App instalável ----- */
+  function prepararInstalacao() {
+    const guardado = chave => { try { return localStorage.getItem(chave); } catch (_) { return null; } };
+    const guardar = (chave, v) => { try { localStorage.setItem(chave, v); } catch (_) { /* navegador sem armazenamento */ } };
+    const instalado = () => window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    const iPhone = /iphone|ipad|ipod/i.test(navigator.userAgent) && !/crios|fxios|edgios/i.test(navigator.userAgent);
+    let pedido = null;
+    const mostrar = (texto, comBotao) => {
+      if (instalado() || guardado('instalarDispensado')) return;
+      if (texto) $('instalarTexto').textContent = texto;
+      $('instalarBtn').classList.toggle('hidden', !comBotao);
+      $('instalarAviso').classList.remove('hidden');
+    };
+    const esconder = () => $('instalarAviso').classList.add('hidden');
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+      navigator.serviceWorker.register('sw.js').catch(e => console.warn('Service worker não registrado:', e?.message));
+    }
+    window.addEventListener('beforeinstallprompt', ev => { ev.preventDefault(); pedido = ev; mostrar(null, true); });
+    window.addEventListener('appinstalled', () => { pedido = null; esconder(); });
+    if (iPhone) mostrar('No iPhone: toque em Compartilhar (□↑) e depois em "Adicionar à Tela de Início".', false);
+    $('instalarBtn').addEventListener('click', async () => {
+      if (!pedido) return;
+      pedido.prompt();
+      const { outcome } = await pedido.userChoice;
+      pedido = null;
+      if (outcome === 'accepted') esconder();
+    });
+    $('instalarFechar').addEventListener('click', () => { guardar('instalarDispensado', '1'); esconder(); });
+  }
+  prepararInstalacao();
+
   /* ----- Sessão ----- */
   function entrarNoApp(session) {
     $('userEmail').textContent = session.user.email || '';

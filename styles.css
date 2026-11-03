@@ -267,3 +267,10 @@ button:disabled{opacity:.55;cursor:progress}
   #agAnalisar{width:100%}
   .nav-item{font-size:10.5px;letter-spacing:-.1px;padding-left:1px;padding-right:1px}
 }
+
+/* Aviso de instalação */
+.install-card{display:flex;align-items:center;gap:14px;padding:14px 16px}
+.install-card img{border-radius:12px;flex:none}
+.install-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.install-text small{font-size:13px;line-height:1.4}
+@media (display-mode: standalone){.install-card{display:none!important}}

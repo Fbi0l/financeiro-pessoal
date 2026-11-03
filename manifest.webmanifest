@@ -1,0 +1,26 @@
+{
+  "id": "/financeiro-pessoal/",
+  "name": "Financeiro",
+  "short_name": "Financeiro",
+  "description": "Seus gastos, contas e categorias em um só lugar, com assistente de IA.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "/financeiro-pessoal/#inicio",
+  "scope": "/financeiro-pessoal/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f5f9",
+  "theme_color": "#1e2547",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    { "src": "assets/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Novo lançamento", "short_name": "Novo", "url": "/financeiro-pessoal/#lancamentos", "icons": [{ "src": "assets/icone-192.png", "sizes": "192x192" }] },
+    { "name": "Importar extrato", "short_name": "Importar", "url": "/financeiro-pessoal/#importar", "icons": [{ "src": "assets/icone-192.png", "sizes": "192x192" }] },
+    { "name": "Assistente", "short_name": "Assistente", "url": "/financeiro-pessoal/#assistente", "icons": [{ "src": "assets/icone-192.png", "sizes": "192x192" }] }
+  ]
+}

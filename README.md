@@ -2,6 +2,13 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.5.0 — App instalável
+
+- O app pode ser **instalado** na área de trabalho (Windows, com Edge ou Chrome) e na tela inicial do celular (Android e iPhone). Ele abre em janela própria, com ícone e nome "Financeiro".
+- Atalhos no ícone (clique direito ou toque longo): Novo lançamento, Importar extrato e Assistente.
+- O **service worker** (`sw.js`) guarda só os arquivos do próprio site, para abrir rápido. Ele **nunca guarda nada do Supabase** (login, lançamentos, IA), e o teste de segurança confere isso. Com internet, sempre busca a versão mais nova.
+- A cada versão, a mesma numeração vai no `index.html` (`?v=`) e no `sw.js` (lista e nome do cache). O teste de segurança acusa se ficarem diferentes.
+
 ## Versão 0.4.0 — Assistente com IA
 
 - **Menu Assistente:**
@@ -81,4 +88,4 @@ O esquema foi criado pelas migrações `fase1_base_financeira` e `cor_especie_ne
 
 1. Cartão de crédito, se usar.
 2. Edição de contas (saldo inicial) e categorias.
-3. Limites por categoria, memória de preferências do assistente e instalação no celular (PWA).
+3. Limites por categoria e memória de preferências do assistente.

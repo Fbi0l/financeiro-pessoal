@@ -45,4 +45,19 @@ for (const arquivo of ['index.html', 'app.js', 'importar.js', 'styles.css']) {
   const t = fs.readFileSync(arquivo, 'utf8');
   assert.ok(!/sb_secret_|service_role/.test(t), `${arquivo}: possivel chave secreta`);
 }
-console.log('Site aprovado: CSP restrita, integridade dos scripts externos, nada inline e so chave publicavel.');
+// App instalavel: manifesto valido, icones existem e o service worker nunca guarda dados do Supabase.
+const manifesto = JSON.parse(fs.readFileSync('manifest.webmanifest', 'utf8'));
+assert.equal(manifesto.display, 'standalone'); assert.equal(manifesto.scope, '/financeiro-pessoal/');
+assert.ok(manifesto.start_url.startsWith(manifesto.scope));
+for (const i of manifesto.icons) assert.ok(fs.existsSync(i.src), `icone ${i.src}`);
+assert.ok(manifesto.icons.some(i => i.sizes === '192x192') && manifesto.icons.some(i => i.sizes === '512x512') && manifesto.icons.some(i => i.purpose === 'maskable'));
+assert.match(html, /<link rel="manifest" href="manifest.webmanifest">/); assert.ok(fs.existsSync('assets/apple-touch-icon.png'));
+const sw = fs.readFileSync('sw.js', 'utf8');
+const versoesHtml = [...new Set([...html.matchAll(/\?v=(\d+\.\d+\.\d+)/g)].map(m => m[1]))];
+assert.equal(versoesHtml.length, 1, 'uma so versao nos arquivos da pagina');
+for (const arq of ['app.js', 'importar.js', 'styles.css']) assert.ok(sw.includes(`./${arq}?v=${versoesHtml[0]}`), `sw.js guarda ${arq} na versao da pagina`);
+assert.ok(sw.includes(`'financeiro-v${versoesHtml[0]}'`), 'nome do cache acompanha a versao');
+assert.ok(!/supabase\.co/.test(sw), 'service worker nao menciona o Supabase');
+assert.match(sw, /const PERMITIDOS = \[self\.location\.origin, 'https:\/\/cdn\.jsdelivr\.net'\]/);
+assert.match(sw, /req\.method !== 'GET' \|\| !PERMITIDOS\.includes\(url\.origin\)\) return;/, 'so GET do proprio site e do CDN');
+console.log('Site aprovado: CSP restrita, integridade dos scripts externos, nada inline, so chave publicavel e app instalavel seguro.');
