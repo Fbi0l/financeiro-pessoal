@@ -121,8 +121,12 @@ const Importar = (() => {
     descricao: /^(descricao|historico|lancamento|title|titulo|memo|detalhe|detalhes|descricao do lancamento|estabelecimento)$/,
     credito: /^(credito|entrada|entradas|credito \(r\$\))$/,
     debito: /^(debito|saida|saidas|debito \(r\$\))$/,
-    id: /^(identificador|id|fitid|codigo|documento|n. documento|numero do documento)$/
+    id: /^(identificador|id|fitid|codigo|documento|n. documento|numero do documento)$/,
+    complemento: /^(detalhes|complemento)$/,
+    tipo: /^(tipo lancamento|tipo de lancamento|tipo)$/
   };
+  // Identificador de verdade (único no banco) x número de documento (o BB e outros repetem entre lançamentos).
+  const ID_UNICO = /^(identificador|id|fitid)$/;
   function lerCSV(texto) {
     const linhas = separarCSV(texto);
     let cab = -1, col = {};
@@ -139,6 +143,12 @@ const Importar = (() => {
       erro.codigo = 'csv_colunas'; throw erro;
     }
     const titulos = linhas[cab].map(semAcento).join('|');
+    const nomesCab = linhas[cab].map(semAcento);
+    const idUnico = col.id !== undefined && ID_UNICO.test(nomesCab[col.id]);
+    const usaComplemento = col.complemento !== undefined && col.complemento !== col.descricao;
+    // Banco do Brasil: "Data, Lançamento, Detalhes, N° documento, Valor, Tipo Lançamento" (atual)
+    // ou "Data, Dependencia Origem, Histórico, Data do Balancete, Número do documento, Valor" (antigo).
+    const bancoDoBrasil = (/(^|\|)lancamento\|detalhes(\||$)/.test(titulos) && /tipo lancamento/.test(titulos)) || /dependencia origem/.test(titulos);
     // Fatura do cartão Nubank: "date,title,amount" (compras positivas).
     const cartaoNubank = titulos === 'date|title|amount';
     const movimentos = [];
@@ -152,10 +162,24 @@ const Importar = (() => {
         valor = Math.round((Math.abs(cr) - Math.abs(db)) * 100) / 100;
       }
       if (cartaoNubank && valor != null) valor = -valor;
-      movimentos.push({ data, valor, descricao: limparDescricao(l[col.descricao]), fitid: col.id !== undefined ? (l[col.id] || '') : '' });
+      if (col.tipo !== undefined && valor != null) {
+        const tipo = semAcento(l[col.tipo]);
+        if (/^(saida|debito|d)$/.test(tipo)) valor = -Math.abs(valor);
+        else if (/^(entrada|credito|c)$/.test(tipo)) valor = Math.abs(valor);
+      }
+      let descricao = limparEspacos(l[col.descricao]);
+      if (usaComplemento) {
+        // "03/10 14:22 Fulano de Tal" -> "Fulano de Tal" (a data já está na coluna própria).
+        const comp = limparEspacos(l[col.complemento]).replace(/^\d{2}\/\d{2}(\/\d{2,4})?(\s+\d{2}:\d{2}(:\d{2})?)?\s*/, '');
+        if (comp && !semAcento(descricao).includes(semAcento(comp))) descricao = descricao ? `${descricao} - ${comp}` : comp;
+      }
+      // Número de documento não é único: só identifica junto com a data e o valor.
+      const doc = col.id !== undefined ? String(l[col.id] || '').trim() : '';
+      const fitid = !doc ? '' : idUnico ? doc : (/^0*$/.test(doc) || valor == null ? '' : `doc:${data}:${Math.round(valor * 100)}:${doc}`);
+      movimentos.push({ data, valor, descricao: limparDescricao(descricao), fitid });
     }
     const nubankConta = /^data\|valor\|identificador\|descricao$/.test(titulos);
-    return { formato: nubankConta ? 'CSV do Nubank' : cartaoNubank ? 'CSV do cartão Nubank' : 'CSV', tipoExtrato: cartaoNubank ? 'cartao' : 'conta', banco: '', conta: '', saldoFinal: null, movimentos };
+    return { formato: nubankConta ? 'CSV do Nubank' : cartaoNubank ? 'CSV do cartão Nubank' : bancoDoBrasil ? 'CSV do Banco do Brasil' : 'CSV', tipoExtrato: cartaoNubank ? 'cartao' : 'conta', banco: '', conta: '', saldoFinal: null, movimentos };
   }
 
   /** Lê um extrato (OFX ou CSV) e devolve os movimentos já limpos, sem linhas de saldo e sem valor zero. */

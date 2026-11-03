@@ -2,6 +2,13 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.7.1 — Extrato do Banco do Brasil
+
+- **CSV do Banco do Brasil** reconhecido nos dois formatos (atual, com "Detalhes" e "Tipo Lançamento", e o antigo, com "Dependencia Origem"). O **OFX** do BB já funcionava.
+- A descrição junta o lançamento com os detalhes (ex.: "Pix - Enviado - Maria Souza"), o que melhora a sugestão de categoria.
+- A coluna "Tipo Lançamento" (Entrada/Saída) decide o sinal do valor.
+- **Correção para todos os bancos:** número de documento não é mais tratado como identificador único sozinho (o BB repete números em tarifas e Pix); ele só identifica junto com a data e o valor, então nenhum lançamento novo é descartado por engano como "já importado".
+
 ## Versão 0.7.0 — Convites e versão dentro do app
 
 - **Convites (só o titular):** em Início, o painel **Convites** gera um link de uso único que vale 48 horas. A pessoa abre o link, escolhe e-mail e senha e entra com **finanças próprias e separadas** (contas e categorias padrão criadas na hora). Ela não vê nada do titular, e o titular não vê nada dela.

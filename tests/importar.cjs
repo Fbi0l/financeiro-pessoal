@@ -76,6 +76,38 @@ const ids4 = I.idsExternos(e4.movimentos);
 assert.ok(ids4[1].startsWith('h:2026-11-05:-800:') && ids4[2] === ids4[1] + '#2', 'dois cafes iguais no mesmo dia viram dois lancamentos');
 assert.deepEqual(I.idsExternos(I.lerExtrato(I.decodificar(bytes1252(generico))).movimentos), ids4, 'mesmo arquivo gera os mesmos identificadores');
 
+// ---------- CSV do Banco do Brasil (formato atual): Detalhes, tipo e documento repetido ----------
+const bb = `"Data","Lançamento","Detalhes","N° documento","Valor","Tipo Lançamento"
+"01/10/2026","Saldo Anterior","","","1.500,00",""
+"03/10/2026","Pix - Enviado","03/10 14:22 Maria Souza","100301","-50,00","Saída"
+"03/10/2026","Tarifa Pacote de Serviços","","11","-32,50","Saída"
+"05/10/2026","Pix - Recebido","05/10 09:10 João Lima","100501","200,00","Entrada"
+"07/10/2026","Compra com Cartão","07/10 12:00 SUPERMERCADO BOM PRECO","11","45,90","Saída"
+"31/10/2026","S A L D O","","","1.572,60",""`;
+const eBB = I.lerExtrato(I.decodificar(bytes1252(bb)));
+assert.equal(eBB.formato, 'CSV do Banco do Brasil');
+assert.equal(eBB.movimentos.length, 4); assert.equal(eBB.descartados.saldo, 2);
+assert.deepEqual(eBB.movimentos.map(m => m.valor), [-50, -32.5, 200, -45.9], 'Tipo Lançamento manda no sinal');
+assert.deepEqual(eBB.movimentos.map(m => m.descricao), ['Pix - Enviado - Maria Souza', 'Tarifa Pacote de Serviços', 'Pix - Recebido - João Lima', 'Compra com Cartão - SUPERMERCADO BOM PRECO']);
+const idsBB = I.idsExternos(eBB.movimentos);
+assert.equal(new Set(idsBB).size, 4, 'documento "11" repetido nao faz lancamentos diferentes parecerem iguais');
+assert.ok(idsBB.every(id => !id.startsWith('b:11')), 'documento sozinho nao vira identificador');
+// Mesmo documento em outro mes, outro valor: identificador diferente (nao some na importacao seguinte).
+const bbNov = bb.replace('"03/10/2026","Tarifa Pacote de Serviços","","11","-32,50"', '"03/11/2026","Tarifa Pacote de Serviços","","11","-34,00"');
+assert.notEqual(I.idsExternos(I.lerExtrato(bbNov).movimentos)[1], idsBB[1]);
+assert.deepEqual(I.idsExternos(I.lerExtrato(I.decodificar(bytes1252(bb))).movimentos), idsBB, 'mesmo arquivo do BB gera os mesmos identificadores');
+
+// ---------- CSV do Banco do Brasil (formato antigo, ponto decimal) ----------
+const bbAntigo = `"Data","Dependencia Origem","Histórico","Data do Balancete","Número do documento","Valor",
+"01/10/2026","","Saldo Anterior","","0","1500.00",
+"04/10/2026","","Pagto conta energia","","0","-189.35",
+"06/10/2026","0001","Transferência recebida","","553201","1250.00",
+"31/10/2026","","S A L D O","","0","2560.65",`;
+const eBBa = I.lerExtrato(bbAntigo);
+assert.equal(eBBa.formato, 'CSV do Banco do Brasil');
+assert.deepEqual(eBBa.movimentos.map(m => [m.data, m.valor, m.descricao]), [['2026-10-04', -189.35, 'Pagto conta energia'], ['2026-10-06', 1250, 'Transferência recebida']]);
+assert.equal(eBBa.movimentos[0].fitid, '', 'documento "0" e ignorado');
+
 // ---------- CSV com colunas de credito e debito ----------
 const credDeb = `Data,Lançamento,Crédito,Débito\n10/11/2026,PIX RECEBIDO JOAO,250,\n11/11/2026,POSTO IPIRANGA,,180.5`;
 assert.deepEqual(I.lerExtrato(credDeb).movimentos.map(m => m.valor), [250, -180.5]);
@@ -131,4 +163,4 @@ const regs = I.registrosParaGravar(previa, 'conta-1');
 assert.equal(regs.length, 2);
 assert.deepEqual(regs[0], { tipo: 'despesa', descricao: 'UBER *TRIP - Compra no débito', valor: 23.5, data: '2026-10-10', conta_id: 'conta-1',
   conta_destino_id: null, categoria_id: 'tra', pago: true, observacoes: null, origem: 'importacao', id_externo: 'b:20261010001' });
-console.log('Importacao aprovada: OFX 1 e 2, CSV Nubank e generico, acentos, saldo descartado, identificadores, categorias e previa.');
+console.log('Importacao aprovada: OFX 1 e 2, CSV Nubank, Banco do Brasil e generico, acentos, saldo descartado, identificadores, categorias e previa.');
