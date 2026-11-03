@@ -18,10 +18,10 @@
   <meta name="apple-mobile-web-app-title" content="Financeiro">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="application-name" content="Financeiro">
-  <link rel="stylesheet" href="styles.css?v=0.5.0">
+  <link rel="stylesheet" href="styles.css?v=0.6.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-  <script src="importar.js?v=0.5.0" defer></script>
-  <script src="app.js?v=0.5.0" defer></script>
+  <script src="importar.js?v=0.6.0" defer></script>
+  <script src="app.js?v=0.6.0" defer></script>
 </head>
 <body>
   <div id="bootView" class="boot" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Carregando…</span></div>
@@ -37,7 +37,7 @@
       <p id="loginMessage" class="message" role="alert" aria-live="assertive"></p>
       <small>Acesso restrito ao titular. Não há cadastro aberto.</small>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.5.0</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.6.0</footer>
   </div>
 
   <div id="appView" class="app hidden">
@@ -193,14 +193,21 @@
       </section>
 
       <section id="contasPage" class="page hidden">
-        <div class="panel"><div class="panel-head"><h2>Contas</h2><span id="contasQtd" class="badge"></span></div><ul id="contasLista" class="list"></ul></div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>Contas <span id="contasQtd" class="badge"></span></h2><p class="muted panel-sub">Toque numa conta para editar ou acertar o saldo com o do banco.</p></div>
+            <button id="novaContaBtn" class="secondary" type="button">+ Nova conta</button></div>
+          <ul id="contasLista" class="list list-click"></ul>
+        </div>
+        <details id="contasArquivadasBox" class="panel arquivadas hidden"><summary>Contas arquivadas <span id="contasArqQtd" class="badge"></span></summary><ul id="contasArquivadas" class="list list-click"></ul></details>
       </section>
 
       <section id="categoriasPage" class="page hidden">
         <div class="grid-2">
-          <div class="panel"><div class="panel-head"><h2>Despesas</h2><span id="despesasQtd" class="badge"></span></div><ul id="catDespesas" class="chips"></ul></div>
-          <div class="panel"><div class="panel-head"><h2>Receitas</h2><span id="receitasQtd" class="badge"></span></div><ul id="catReceitas" class="chips"></ul></div>
+          <div class="panel"><div class="panel-head"><h2>Saídas <span id="despesasQtd" class="badge"></span></h2><button class="secondary nova-cat" type="button" data-tipo="despesa">+ Nova</button></div><ul id="catDespesas" class="chips"></ul></div>
+          <div class="panel"><div class="panel-head"><h2>Entradas <span id="receitasQtd" class="badge"></span></h2><button class="secondary nova-cat" type="button" data-tipo="receita">+ Nova</button></div><ul id="catReceitas" class="chips"></ul></div>
         </div>
+        <details id="catArquivadasBox" class="panel arquivadas hidden"><summary>Categorias arquivadas <span id="catArqQtd" class="badge"></span></summary><ul id="catArquivadas" class="chips"></ul></details>
+        <p class="muted ag-aviso">Toque numa categoria para renomear, trocar a cor, arquivar ou excluir.</p>
       </section>
     </main>
   </div>
@@ -229,6 +236,50 @@
         <span class="spacer"></span>
         <button id="txCancelar" class="secondary" type="button">Cancelar</button>
         <button id="txSalvar" class="primary" type="submit">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="contaDialog" class="dialog" aria-labelledby="contaTitulo">
+    <form id="contaForm" class="dialog-form" novalidate>
+      <div class="dialog-head"><h2 id="contaTitulo">Nova conta</h2><button id="contaFechar" class="ghost icon-btn" type="button" aria-label="Fechar">✕</button></div>
+      <label>Nome *<input id="contaNome" maxlength="60" autocomplete="off" required placeholder="Ex.: Nubank"></label>
+      <label>Tipo<select id="contaTipo">
+        <option value="corrente">Conta corrente</option><option value="poupanca">Poupança</option><option value="carteira">Carteira (dinheiro)</option>
+        <option value="investimento">Investimento</option><option value="outro">Outro</option></select></label>
+      <fieldset class="saldo-box">
+        <legend>Saldo</legend>
+        <label>Saldo de hoje no banco (R$)<input id="contaSaldoHoje" inputmode="decimal" autocomplete="off" placeholder="0,00" maxlength="18"></label>
+        <small id="contaSaldoAjuda" class="muted">Informe o saldo que aparece agora no app do banco. O Financeiro calcula o saldo inicial para os números baterem com os lançamentos já registrados. Use "-" para saldo negativo.</small>
+      </fieldset>
+      <div class="cores-campo"><span class="cores-rotulo">Cor</span><div id="contaCores" class="cores" role="radiogroup" aria-label="Cor da conta"></div></div>
+      <p id="contaMensagem" class="message" role="alert"></p>
+      <div class="dialog-actions">
+        <button id="contaExcluir" class="danger-ghost hidden" type="button">Excluir</button>
+        <button id="contaArquivar" class="ghost hidden" type="button">Arquivar</button>
+        <span class="spacer"></span>
+        <button id="contaCancelar" class="secondary" type="button">Cancelar</button>
+        <button id="contaSalvar" class="primary" type="submit">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="catDialog" class="dialog dialog-sm" aria-labelledby="catTitulo">
+    <form id="catForm" class="dialog-form" novalidate>
+      <div class="dialog-head"><h2 id="catTitulo">Nova categoria</h2><button id="catFechar" class="ghost icon-btn" type="button" aria-label="Fechar">✕</button></div>
+      <div class="segmented seg-2" role="radiogroup" aria-label="Tipo da categoria">
+        <label><input type="radio" name="catTipo" value="despesa" checked><span>Saída</span></label>
+        <label><input type="radio" name="catTipo" value="receita"><span>Entrada</span></label>
+      </div>
+      <label>Nome *<input id="catNome" maxlength="40" autocomplete="off" required placeholder="Ex.: Pets"></label>
+      <div class="cores-campo"><span class="cores-rotulo">Cor</span><div id="catCores" class="cores" role="radiogroup" aria-label="Cor da categoria"></div></div>
+      <p id="catMensagem" class="message" role="alert"></p>
+      <div class="dialog-actions">
+        <button id="catExcluir" class="danger-ghost hidden" type="button">Excluir</button>
+        <button id="catArquivar" class="ghost hidden" type="button">Arquivar</button>
+        <span class="spacer"></span>
+        <button id="catCancelar" class="secondary" type="button">Cancelar</button>
+        <button id="catSalvar" class="primary" type="submit">Salvar</button>
       </div>
     </form>
   </dialog>

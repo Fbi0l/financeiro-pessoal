@@ -2,6 +2,14 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.6.0 — Contas e categorias editáveis
+
+- **Contas:** criar, editar (nome, tipo, cor), arquivar, desarquivar e excluir (só sem lançamentos; as outras podem ser arquivadas).
+- **Saldo de hoje no banco:** ao editar uma conta, digite o saldo que aparece no app do banco. O Financeiro recalcula o **saldo inicial** para bater, sem mexer em nenhum lançamento. Aceita zero e saldo negativo.
+- **Categorias:** criar (de saída ou de entrada), renomear, trocar a cor, arquivar e excluir (só sem lançamentos). O tipo de uma categoria existente não muda, por causa da regra do banco que liga a categoria ao tipo do lançamento.
+- Categorias arquivadas somem dos formulários e da importação, mas lançamentos antigos continuam mostrando e podem manter a categoria ao serem editados.
+- Mensagens claras para nome repetido e para exclusão de item em uso. A confirmação de exclusão virou uma janela única, reaproveitada em todo o app.
+
 ## Versão 0.5.0 — App instalável
 
 - O app pode ser **instalado** na área de trabalho (Windows, com Edge ou Chrome) e na tela inicial do celular (Android e iPhone). Ele abre em janela própria, com ícone e nome "Financeiro".
@@ -87,5 +95,4 @@ O esquema foi criado pelas migrações `fase1_base_financeira` e `cor_especie_ne
 ## Próximas etapas
 
 1. Cartão de crédito, se usar.
-2. Edição de contas (saldo inicial) e categorias.
-3. Limites por categoria e memória de preferências do assistente.
+2. Limites por categoria e memória de preferências do assistente.

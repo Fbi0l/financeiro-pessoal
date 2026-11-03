@@ -274,3 +274,38 @@ button:disabled{opacity:.55;cursor:progress}
 .install-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .install-text small{font-size:13px;line-height:1.4}
 @media (display-mode: standalone){.install-card{display:none!important}}
+
+/* Contas e categorias */
+.panel-head h2 .badge{margin-left:6px;vertical-align:middle}
+.list-click .list-item{padding:0;border-top:1px solid var(--line)}
+.list-click .list-item:first-child{border-top:0}
+.list-btn{display:flex;align-items:center;gap:12px;width:100%;background:transparent;border-radius:10px;padding:13px 8px;text-align:left;font-weight:400;color:inherit}
+.list-btn:hover{background:#f7f8fc}
+.chips li{list-style:none}
+.arquivadas{padding:0}
+.arquivadas summary{cursor:pointer;padding:16px 20px;font-weight:650;color:var(--muted);list-style-position:inside}
+.arquivadas[open] summary{border-bottom:1px solid var(--line)}
+.arquivadas .list,.arquivadas .chips{padding:8px 16px 14px}
+.arquivadas .list-btn,.arquivadas .chip{opacity:.75}
+.saldo-box{border:1px solid var(--line);border-radius:12px;padding:4px 14px 12px;margin:12px 0}
+.saldo-box legend{font-size:13px;font-weight:700;color:#353b52;padding:0 6px}
+.saldo-box label{margin:8px 0 6px}
+.saldo-box small{display:block;font-size:12px;line-height:1.45}
+#contaSaldoHoje{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.cores-campo{margin:12px 0}
+.cores-rotulo{display:block;font-size:13px;font-weight:650;color:#353b52;margin-bottom:8px}
+.cores{display:flex;flex-wrap:wrap;gap:8px}
+.cor{position:relative;display:inline-flex;margin:0!important;cursor:pointer}
+.cor input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.cor-amostra{width:30px;height:30px;border-radius:50%;background:var(--cor);box-shadow:inset 0 0 0 2px #ffffff55}
+.cor input:checked+.cor-amostra{outline:3px solid var(--ink);outline-offset:2px}
+.cor input:focus-visible+.cor-amostra{outline:3px solid var(--focus);outline-offset:2px}
+.seg-2{grid-template-columns:repeat(2,1fr)}
+.segmented input:disabled+span{opacity:.55;cursor:not-allowed}
+.dialog-actions .ghost{color:var(--muted)}
+.grid-2+.arquivadas{margin-top:18px}
+@media (max-width:760px){
+  .dialog-actions{flex-wrap:wrap;row-gap:10px}
+  .dialog-actions .spacer{flex-basis:100%;height:0}
+  .dialog-actions>.primary,.dialog-actions>.secondary{flex:1}
+}

@@ -155,6 +155,49 @@ function mensagemErroBanco(error) {
   return 'Não foi possível salvar. Tente novamente.';
 }
 
+/* ---------- Contas e categorias ---------- */
+const CORES = ['#36418a', '#1971c2', '#0c8599', '#2f9e44', '#8a05be', '#9c36b5', '#d6336c', '#e03131', '#e8590c', '#f08c00', '#8c7a5b', '#6d7b8f'];
+const TIPOS_CONTA_VALIDOS = ['corrente', 'poupanca', 'carteira', 'investimento', 'outro'];
+/** Saldo informado pela pessoa (pode ser zero ou negativo): "1.234,56", "-50", "0". Devolve número ou null. */
+function lerSaldo(texto) {
+  const t = String(texto ?? '').replace(/\s|R\$/gi, '');
+  if (!t) return null;
+  const negativo = /^[-−]/.test(t);
+  const corpo = t.replace(/^[-−+]/, '');
+  if (/^0+([.,]0{1,2})?$/.test(corpo)) return 0;
+  const v = lerValor(corpo);
+  return v == null ? null : (negativo ? -v : v);
+}
+/** Saldo inicial que faz o saldo de hoje bater com o banco: hoje − (efeito dos lançamentos já registrados). */
+function saldoInicialPara(saldoHoje, saldoAtual, saldoInicial) {
+  const movimentos = paraCentavos(saldoAtual) - paraCentavos(saldoInicial);
+  return (paraCentavos(saldoHoje) - movimentos) / 100;
+}
+function validarConta(c) {
+  const nome = String(c.nome || '').trim();
+  if (!nome) return 'Informe o nome da conta.';
+  if (nome.length > 60) return 'O nome pode ter no máximo 60 caracteres.';
+  if (!TIPOS_CONTA_VALIDOS.includes(c.tipo)) return 'Escolha o tipo da conta.';
+  if (!/^#[0-9a-fA-F]{6}$/.test(String(c.cor || ''))) return 'Escolha uma cor.';
+  if (c.saldo_inicial == null || Math.abs(c.saldo_inicial) > 999999999999.99) return 'Informe um saldo válido, como 1.234,56 ou -50,00.';
+  return null;
+}
+function validarCategoria(c) {
+  const nome = String(c.nome || '').trim();
+  if (!nome) return 'Informe o nome da categoria.';
+  if (nome.length > 40) return 'O nome pode ter no máximo 40 caracteres.';
+  if (!['receita', 'despesa'].includes(c.tipo)) return 'Escolha se é de saída ou de entrada.';
+  if (!/^#[0-9a-fA-F]{6}$/.test(String(c.cor || ''))) return 'Escolha uma cor.';
+  return null;
+}
+/** Mensagens claras para os erros do banco ao salvar ou excluir contas e categorias. */
+function mensagemErroCadastro(error, oque) {
+  const m = String(error?.code || '') + ' ' + String(error?.message || '');
+  if (/23505/.test(m)) return `Já existe ${oque === 'conta' ? 'uma conta' : 'uma categoria desse tipo'} com esse nome.`;
+  if (/23503/.test(m)) return `Não dá para excluir: ${oque === 'conta' ? 'esta conta' : 'esta categoria'} tem lançamentos. Arquive para escondê-la sem perder o histórico.`;
+  return mensagemErroBanco(error);
+}
+
 /** Texto da IA para exibir como texto puro: tira marcações de Markdown que viriam como símbolos soltos. */
 function textoSimples(s) {
   return String(s ?? '')
@@ -171,7 +214,7 @@ function textoSimples(s) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    textoSimples,
+    textoSimples, CORES, lerSaldo, saldoInicialPara, validarConta, validarCategoria, mensagemErroCadastro,
     formatarMoeda, somarSaldos, corSegura, rotuloTipoConta, mensagemErroLogin, lerValor, valorParaCampo,
     hojeISO, intervaloMes, somarMes, rotuloMes, dataValida, rotuloDia, validarLancamento, montarRegistro,
     totaisLancamentos, agruparPorDia, filtrarLancamentos, mensagemErroBanco
@@ -206,7 +249,7 @@ function iniciar() {
   const el = (tag, cls, texto) => { const e = document.createElement(tag); if (cls) e.className = cls; if (texto != null) e.textContent = texto; return e; };
   const ponto = cor => { const d = el('span', 'dot'); d.style.setProperty('--cor', corSegura(cor)); return d; };
   const contaPorId = id => estado.contas.find(c => c.id === id);
-  const categoriaPorId = id => estado.categorias.find(c => c.id === id);
+  const categoriaPorId = id => (estado.todasCategorias || estado.categorias).find(c => c.id === id); // inclui arquivadas: o histórico mantém o nome
   const opcao = (valor, texto) => { const o = document.createElement('option'); o.value = valor; o.textContent = texto; return o; };
   const sinalValor = (e, valor) => {
     e.textContent = formatarMoeda(valor);
@@ -228,36 +271,56 @@ function iniciar() {
   }
 
   /* ----- Contas, categorias e Início ----- */
-  function itemConta(c, comTipo) {
+  function itemConta(c, comTipo, aoClicar) {
     const li = el('li', 'list-item');
+    const alvo = aoClicar ? el('button', 'list-btn') : li;
+    if (aoClicar) { alvo.type = 'button'; alvo.addEventListener('click', () => aoClicar(c)); alvo.setAttribute('aria-label', `${c.nome}, saldo ${formatarMoeda(c.saldo_atual)}. Editar`); }
     const info = el('div', 'list-info');
     info.append(el('strong', null, c.nome));
     if (comTipo) info.append(el('small', null, rotuloTipoConta(c.tipo)));
     const valor = el('span', 'money', formatarMoeda(c.saldo_atual));
     if (Number(c.saldo_atual) < 0) valor.classList.add('neg');
-    li.append(ponto(c.cor), info, valor);
+    alvo.append(ponto(c.cor), info, valor);
+    if (aoClicar) li.append(alvo);
+    return li;
+  }
+  function chipCategoria(c) {
+    const b = el('button', 'chip chip-btn');
+    b.type = 'button';
+    b.append(ponto(c.cor), el('span', null, c.nome));
+    b.setAttribute('aria-label', `${c.nome}. Editar categoria`);
+    b.addEventListener('click', () => abrirCategoria(c));
+    const li = el('li'); li.append(b);
     return li;
   }
   function listaVazia(ul, texto) { ul.replaceChildren(el('li', 'list-empty', texto)); }
 
   function desenharBase() {
     const contas = estado.contas.filter(c => !c.arquivada);
+    const arquivadas = estado.contas.filter(c => c.arquivada);
     $('saldoTotal').textContent = formatarMoeda(somarSaldos(contas));
     $('saldoResumo').textContent = contas.length === 1 ? 'em 1 conta' : `somando ${contas.length} contas`;
     $('contasQtd').textContent = String(contas.length);
     if (contas.length) {
       $('contasResumo').replaceChildren(...contas.map(c => itemConta(c, false)));
-      $('contasLista').replaceChildren(...contas.map(c => itemConta(c, true)));
+      $('contasLista').replaceChildren(...contas.map(c => itemConta(c, true, abrirConta)));
     } else {
       listaVazia($('contasResumo'), 'Nenhuma conta cadastrada.');
-      listaVazia($('contasLista'), 'Nenhuma conta cadastrada.');
+      listaVazia($('contasLista'), 'Nenhuma conta ativa. Toque em “+ Nova conta”.');
     }
+    $('contasArquivadasBox').classList.toggle('hidden', !arquivadas.length);
+    $('contasArqQtd').textContent = String(arquivadas.length);
+    $('contasArquivadas').replaceChildren(...arquivadas.map(c => itemConta(c, true, abrirConta)));
     for (const [tipo, ul, qtd] of [['despesa', 'catDespesas', 'despesasQtd'], ['receita', 'catReceitas', 'receitasQtd']]) {
       const cats = estado.categorias.filter(c => c.tipo === tipo);
       $(qtd).textContent = String(cats.length);
-      if (cats.length) $(ul).replaceChildren(...cats.map(c => { const li = el('li', 'chip'); li.append(ponto(c.cor), el('span', null, c.nome)); return li; }));
+      if (cats.length) $(ul).replaceChildren(...cats.map(chipCategoria));
       else listaVazia($(ul), 'Nenhuma categoria.');
     }
+    const catArq = (estado.todasCategorias || []).filter(c => c.arquivada);
+    $('catArquivadasBox').classList.toggle('hidden', !catArq.length);
+    $('catArqQtd').textContent = String(catArq.length);
+    $('catArquivadas').replaceChildren(...catArq.map(chipCategoria));
     // Filtros da lista
     const contaSel = $('filtroConta').value, catSel = $('filtroCategoria').value;
     $('filtroConta').replaceChildren(opcao('', 'Todas as contas'), ...contas.map(c => opcao(c.id, c.nome)));
@@ -364,13 +427,14 @@ function iniciar() {
     aviso('globalMessage', 'Atualizando…', true);
     try {
       const [contasR, catR] = await Promise.all([
-        db.from('saldos_contas').select('id,nome,tipo,cor,arquivada,saldo_atual').order('nome'),
-        db.from('categorias').select('id,nome,tipo,cor,arquivada').eq('arquivada', false).order('nome')
+        db.from('saldos_contas').select('id,nome,tipo,cor,arquivada,saldo_inicial,saldo_atual').order('nome'),
+        db.from('categorias').select('id,nome,tipo,cor,arquivada').order('nome')
       ]);
       if (contasR.error) throw contasR.error;
       if (catR.error) throw catR.error;
       estado.contas = contasR.data;
-      estado.categorias = catR.data;
+      estado.todasCategorias = catR.data;
+      estado.categorias = catR.data.filter(c => !c.arquivada); // só as ativas aparecem nos formulários e na importação
       desenharBase();
       await Promise.all([carregarResumoMes(), carregarLancamentos()]);
       aviso('globalMessage', '');
@@ -393,8 +457,9 @@ function iniciar() {
     $('txContaRotulo').firstChild.textContent = transf ? 'Da conta *' : 'Conta *';
     $('txPagoTexto').textContent = tipo === 'receita' ? 'Já foi recebido' : transf ? 'Já foi feita' : 'Já foi pago';
     const atual = $('txCategoria').value;
-    const cats = estado.categorias.filter(c => c.tipo === tipo);
-    $('txCategoria').replaceChildren(opcao('', 'Escolha…'), ...cats.map(c => opcao(c.id, c.nome)));
+    // Ativas do tipo + a arquivada que o lançamento em edição já usa (para não obrigar a trocar).
+    const cats = (estado.todasCategorias || estado.categorias).filter(c => c.tipo === tipo && (!c.arquivada || c.id === estado.editando?.categoria_id));
+    $('txCategoria').replaceChildren(opcao('', 'Escolha…'), ...cats.map(c => opcao(c.id, c.arquivada ? `${c.nome} (arquivada)` : c.nome)));
     $('txCategoria').value = cats.some(c => c.id === atual) ? atual : '';
   }
   function preencherContas(select, selecionada) {
@@ -457,22 +522,162 @@ function iniciar() {
     aviso('globalMessage', eraNovo ? 'Lançamento registrado.' : 'Lançamento atualizado.', true);
   }
 
-  function pedirExclusao() {
+  /* ----- Contas e categorias ----- */
+  const cad = { conta: null, categoria: null, salvando: false };
+  function desenharCores(alvo, nomeGrupo, selecionada) {
+    // A cor atual entra na lista mesmo se não for da paleta (ex.: laranja do Itaú), para não mudar sem querer.
+    const lista = /^#[0-9a-fA-F]{6}$/.test(String(selecionada || '')) && !CORES.some(c => c.toLowerCase() === selecionada.toLowerCase()) ? [selecionada, ...CORES] : CORES;
+    alvo.replaceChildren(...lista.map((cor, i) => {
+      const rot = el('label', 'cor');
+      const r = document.createElement('input');
+      r.type = 'radio'; r.name = nomeGrupo; r.value = cor; r.checked = cor.toLowerCase() === String(selecionada).toLowerCase();
+      r.setAttribute('aria-label', `Cor ${i + 1}`);
+      const amostra = el('span', 'cor-amostra'); amostra.style.setProperty('--cor', cor);
+      rot.append(r, amostra);
+      return rot;
+    }));
+    if (!alvo.querySelector('input:checked')) alvo.querySelector('input').checked = true;
+  }
+  const corEscolhida = nomeGrupo => document.querySelector(`input[name=${nomeGrupo}]:checked`)?.value;
+
+  function abrirConta(c = null) {
+    cad.conta = c;
+    $('contaTitulo').textContent = c ? 'Editar conta' : 'Nova conta';
+    $('contaNome').value = c?.nome || '';
+    $('contaTipo').value = c?.tipo || 'corrente';
+    $('contaSaldoHoje').value = valorParaCampo(c ? Number(c.saldo_atual) : 0);
+    $('contaSaldoHoje').dataset.original = $('contaSaldoHoje').value;
+    $('contaSaldoAjuda').textContent = c
+      ? 'Se o saldo no app do banco estiver diferente, digite o valor de lá. O Financeiro recalcula o saldo inicial para bater, sem mexer nos lançamentos. Use "-" para saldo negativo.'
+      : 'Informe o saldo que aparece agora no app do banco (pode ser 0). Use "-" para saldo negativo.';
+    desenharCores($('contaCores'), 'contaCor', c?.cor || CORES[estado.contas.length % CORES.length]);
+    $('contaExcluir').classList.toggle('hidden', !c);
+    $('contaArquivar').classList.toggle('hidden', !c);
+    $('contaArquivar').textContent = c?.arquivada ? 'Desarquivar' : 'Arquivar';
+    aviso('contaMensagem', '');
+    $('contaDialog').showModal();
+    $('contaNome').focus();
+  }
+  async function salvarConta(ev) {
+    ev.preventDefault();
+    if (cad.salvando) return;
+    const c = cad.conta;
+    const saldoDigitado = lerSaldo($('contaSaldoHoje').value);
+    if (saldoDigitado == null) { aviso('contaMensagem', 'Informe um saldo válido, como 1.234,56, 0 ou -50,00.'); return; }
+    const mudouSaldo = !c || $('contaSaldoHoje').value !== $('contaSaldoHoje').dataset.original;
+    const saldoInicial = !c ? saldoDigitado : mudouSaldo ? saldoInicialPara(saldoDigitado, c.saldo_atual, c.saldo_inicial) : Number(c.saldo_inicial);
+    const registro = { nome: $('contaNome').value.trim(), tipo: $('contaTipo').value, cor: corEscolhida('contaCor'), saldo_inicial: saldoInicial };
+    const erro = validarConta(registro);
+    if (erro) { aviso('contaMensagem', erro); return; }
+    cad.salvando = true; $('contaSalvar').disabled = true;
+    aviso('contaMensagem', 'Salvando…', true);
+    const { error } = c
+      ? await db.from('contas').update(registro).eq('id', c.id)
+      : await db.from('contas').insert(registro);
+    cad.salvando = false; $('contaSalvar').disabled = false;
+    if (error) { aviso('contaMensagem', mensagemErroCadastro(error, 'conta')); return; }
+    $('contaDialog').close();
+    await carregarDados();
+    aviso('globalMessage', c ? (mudouSaldo ? `Conta atualizada. Saldo de hoje: ${formatarMoeda(saldoDigitado)}.` : 'Conta atualizada.') : 'Conta criada.', true);
+  }
+  async function arquivarConta() {
+    const c = cad.conta; if (!c) return;
+    const arquivar = !c.arquivada;
+    if (arquivar && !(await confirmar({ titulo: 'Arquivar conta?', botao: 'Arquivar',
+      texto: `“${c.nome}” sai das listas e do saldo total, mas os lançamentos continuam no histórico.${Number(c.saldo_atual) ? ` Ela ainda tem saldo de ${formatarMoeda(c.saldo_atual)}.` : ''} Você pode desarquivar quando quiser.` }))) return;
+    const { error } = await db.from('contas').update({ arquivada: arquivar }).eq('id', c.id);
+    if (error) { aviso('contaMensagem', mensagemErroCadastro(error, 'conta')); return; }
+    $('contaDialog').close();
+    await carregarDados();
+    aviso('globalMessage', arquivar ? 'Conta arquivada.' : 'Conta desarquivada.', true);
+  }
+  async function excluirConta() {
+    const c = cad.conta; if (!c) return;
+    if (!(await confirmar({ titulo: 'Excluir conta?', texto: `“${c.nome}” será excluída. Só é possível excluir contas sem lançamentos. Esta ação não pode ser desfeita.` }))) return;
+    const { data, error } = await db.from('contas').delete().eq('id', c.id).select('id');
+    if (error) { aviso('contaMensagem', mensagemErroCadastro(error, 'conta')); return; }
+    $('contaDialog').close();
+    await carregarDados();
+    aviso('globalMessage', data?.length ? 'Conta excluída.' : 'A conta já tinha sido excluída.', true);
+  }
+
+  function abrirCategoria(c = null, tipo = 'despesa') {
+    cad.categoria = c;
+    $('catTitulo').textContent = c ? 'Editar categoria' : 'Nova categoria';
+    document.querySelector(`input[name=catTipo][value=${c?.tipo || tipo}]`).checked = true;
+    // O tipo de uma categoria existente não muda: lançamentos dependem dele (regra do banco).
+    document.querySelectorAll('input[name=catTipo]').forEach(r => { r.disabled = !!c; });
+    $('catNome').value = c?.nome || '';
+    desenharCores($('catCores'), 'catCor', c?.cor || CORES[(estado.todasCategorias || []).length % CORES.length]);
+    $('catExcluir').classList.toggle('hidden', !c);
+    $('catArquivar').classList.toggle('hidden', !c);
+    $('catArquivar').textContent = c?.arquivada ? 'Desarquivar' : 'Arquivar';
+    aviso('catMensagem', '');
+    $('catDialog').showModal();
+    $('catNome').focus();
+  }
+  async function salvarCategoria(ev) {
+    ev.preventDefault();
+    if (cad.salvando) return;
+    const c = cad.categoria;
+    const registro = { nome: $('catNome').value.trim(), cor: corEscolhida('catCor'), tipo: c ? c.tipo : document.querySelector('input[name=catTipo]:checked').value };
+    const erro = validarCategoria(registro);
+    if (erro) { aviso('catMensagem', erro); return; }
+    cad.salvando = true; $('catSalvar').disabled = true;
+    aviso('catMensagem', 'Salvando…', true);
+    const { error } = c
+      ? await db.from('categorias').update({ nome: registro.nome, cor: registro.cor }).eq('id', c.id)
+      : await db.from('categorias').insert(registro);
+    cad.salvando = false; $('catSalvar').disabled = false;
+    if (error) { aviso('catMensagem', mensagemErroCadastro(error, 'categoria')); return; }
+    $('catDialog').close();
+    await carregarDados();
+    aviso('globalMessage', c ? 'Categoria atualizada.' : 'Categoria criada.', true);
+  }
+  async function arquivarCategoria() {
+    const c = cad.categoria; if (!c) return;
+    const arquivar = !c.arquivada;
+    if (arquivar && !(await confirmar({ titulo: 'Arquivar categoria?', botao: 'Arquivar',
+      texto: `“${c.nome}” não aparece mais para novos lançamentos nem na importação. Os lançamentos antigos continuam com ela.` }))) return;
+    const { error } = await db.from('categorias').update({ arquivada: arquivar }).eq('id', c.id);
+    if (error) { aviso('catMensagem', mensagemErroCadastro(error, 'categoria')); return; }
+    $('catDialog').close();
+    await carregarDados();
+    aviso('globalMessage', arquivar ? 'Categoria arquivada.' : 'Categoria desarquivada.', true);
+  }
+  async function excluirCategoria() {
+    const c = cad.categoria; if (!c) return;
+    if (!(await confirmar({ titulo: 'Excluir categoria?', texto: `“${c.nome}” será excluída. Só é possível excluir categorias sem lançamentos. Esta ação não pode ser desfeita.` }))) return;
+    const { data, error } = await db.from('categorias').delete().eq('id', c.id).select('id');
+    if (error) { aviso('catMensagem', mensagemErroCadastro(error, 'categoria')); return; }
+    $('catDialog').close();
+    await carregarDados();
+    aviso('globalMessage', data?.length ? 'Categoria excluída.' : 'A categoria já tinha sido excluída.', true);
+  }
+
+  /** Janela de confirmação genérica. Devolve true se a pessoa confirmar. */
+  function confirmar({ titulo, texto, botao = 'Excluir' }) {
+    return new Promise(resolve => {
+      $('confirmTitulo').textContent = titulo;
+      $('confirmTexto').textContent = texto;
+      $('confirmSim').textContent = botao;
+      const fim = valor => { $('confirmSim').onclick = null; $('confirmNao').onclick = null; $('confirmDialog').onclose = null; if ($('confirmDialog').open) $('confirmDialog').close(); resolve(valor); };
+      $('confirmSim').onclick = () => fim(true);
+      $('confirmNao').onclick = () => fim(false);
+      $('confirmDialog').onclose = () => fim(false);
+      $('confirmDialog').showModal();
+      $('confirmNao').focus();
+    });
+  }
+
+  async function pedirExclusao() {
     const l = estado.editando;
     if (!l) return;
-    estado.excluindo = l;
-    $('confirmTexto').textContent = `“${l.descricao}”, ${formatarMoeda(l.valor)}. Esta ação não pode ser desfeita.`;
-    $('confirmDialog').showModal();
-    $('confirmNao').focus();
-  }
-  async function confirmarExclusao() {
-    const l = estado.excluindo;
-    if (!l) return;
-    $('confirmSim').disabled = true;
+    const ok = await confirmar({ titulo: 'Excluir lançamento?', texto: `“${l.descricao}”, ${formatarMoeda(l.valor)}. Esta ação não pode ser desfeita.` });
+    if (!ok) return;
+    $('txExcluir').disabled = true;
     const { data, error } = await db.from('lancamentos').delete().eq('id', l.id).select('id');
-    $('confirmSim').disabled = false;
-    $('confirmDialog').close();
-    estado.excluindo = null;
+    $('txExcluir').disabled = false;
     if (error) { aviso('txMensagem', mensagemErroBanco(error)); return; }
     fecharFormulario();
     await carregarDados();
@@ -773,6 +978,7 @@ function iniciar() {
   function sairDoApp() {
     if ($('txDialog').open) $('txDialog').close();
     if ($('confirmDialog').open) $('confirmDialog').close();
+    ['contaDialog', 'catDialog'].forEach(id => { if ($(id).open) $(id).close(); });
     Object.assign(estado, { contas: [], categorias: [], lancamentos: [], editando: null, excluindo: null });
     limparImportacao();
     limparConversa();
@@ -806,14 +1012,23 @@ function iniciar() {
   $('txCancelar').addEventListener('click', fecharFormulario);
   $('txExcluir').addEventListener('click', pedirExclusao);
   $('txValor').addEventListener('blur', () => { const v = lerValor($('txValor').value); if (v != null) $('txValor').value = valorParaCampo(v); });
-  $('confirmNao').addEventListener('click', () => { $('confirmDialog').close(); estado.excluindo = null; });
-  $('confirmSim').addEventListener('click', confirmarExclusao);
   $('mesAnterior').addEventListener('click', () => mudarMes(-1));
   $('mesSeguinte').addEventListener('click', () => mudarMes(1));
   ['filtroConta', 'filtroCategoria'].forEach(id => $(id).addEventListener('change', desenharLista));
   $('filtroBusca').addEventListener('input', desenharLista);
   $('txDialog').addEventListener('close', () => { estado.editando = null; });
   $('abrirImportar').addEventListener('click', abrirImportar);
+  $('novaContaBtn').addEventListener('click', () => abrirConta());
+  $('contaForm').addEventListener('submit', salvarConta);
+  ['contaFechar', 'contaCancelar'].forEach(id => $(id).addEventListener('click', () => $('contaDialog').close()));
+  $('contaArquivar').addEventListener('click', arquivarConta);
+  $('contaExcluir').addEventListener('click', excluirConta);
+  $('contaSaldoHoje').addEventListener('blur', () => { const v = lerSaldo($('contaSaldoHoje').value); if (v != null && $('contaSaldoHoje').value !== $('contaSaldoHoje').dataset.original) $('contaSaldoHoje').value = valorParaCampo(v); });
+  document.querySelectorAll('.nova-cat').forEach(b => b.addEventListener('click', () => abrirCategoria(null, b.dataset.tipo)));
+  $('catForm').addEventListener('submit', salvarCategoria);
+  ['catFechar', 'catCancelar'].forEach(id => $(id).addEventListener('click', () => $('catDialog').close()));
+  $('catArquivar').addEventListener('click', arquivarCategoria);
+  $('catExcluir').addEventListener('click', excluirCategoria);
   mostrarMesAgente();
   $('agMesAnterior').addEventListener('click', () => { Object.assign(ag, somarMes(ag.ano, ag.mes, -1)); mostrarMesAgente(); $('agResultado').classList.add('hidden'); });
   $('agMesSeguinte').addEventListener('click', () => { Object.assign(ag, somarMes(ag.ano, ag.mes, 1)); mostrarMesAgente(); $('agResultado').classList.add('hidden'); });
