@@ -7,6 +7,7 @@ App para registrar, entender e controlar os próprios gastos. É um site estáti
 - **CSV do Banco do Brasil** reconhecido nos dois formatos (atual, com "Detalhes" e "Tipo Lançamento", e o antigo, com "Dependencia Origem"). O **OFX** do BB já funcionava.
 - A descrição junta o lançamento com os detalhes (ex.: "Pix - Enviado - Maria Souza"), o que melhora a sugestão de categoria.
 - A coluna "Tipo Lançamento" (Entrada/Saída) decide o sinal do valor.
+- **Correção:** a lista de contas da importação ficava vazia quando a página abria sem o botão "Importar extrato" (ao recarregar ou reabrir o app). Agora ela é preenchida sempre que a página abre e quando as contas carregam.
 - **Correção para todos os bancos:** número de documento não é mais tratado como identificador único sozinho (o BB repete números em tarifas e Pix); ele só identifica junto com a data e o valor, então nenhum lançamento novo é descartado por engano como "já importado".
 
 ## Versão 0.7.0 — Convites e versão dentro do app

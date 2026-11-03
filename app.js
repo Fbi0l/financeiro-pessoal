@@ -278,6 +278,7 @@ function iniciar() {
     $('pageTitle').textContent = PAGINAS[pagina].titulo;
     $('pageEyebrow').textContent = PAGINAS[pagina].eyebrow;
     if (location.hash !== '#' + pagina) history.replaceState(null, '', '#' + pagina);
+    if (pagina === 'importar') preencherContasImportacao();
   }
 
   /* ----- Contas, categorias e Início ----- */
@@ -446,6 +447,7 @@ function iniciar() {
       estado.todasCategorias = catR.data;
       estado.categorias = catR.data.filter(c => !c.arquivada); // só as ativas aparecem nos formulários e na importação
       desenharBase();
+      preencherContasImportacao();
       await Promise.all([carregarResumoMes(), carregarLancamentos()]);
       aviso('globalMessage', '');
     } catch (e) {
@@ -704,13 +706,15 @@ function iniciar() {
   const TAMANHO_MAXIMO = 5 * 1024 * 1024;
   const formatarData = iso => iso.split('-').reverse().join('/');
 
-  function abrirImportar() {
+  /** Lista de contas da importação. Chamada ao abrir a página (por botão, link ou ao reabrir o app)
+      e sempre que as contas carregam, para nunca ficar vazia. Mantém a conta já escolhida. */
+  function preencherContasImportacao() {
     const contas = estado.contas.filter(c => !c.arquivada);
     const atual = $('impConta').value || $('filtroConta').value;
-    $('impConta').replaceChildren(opcao('', 'Escolha a conta…'), ...contas.map(c => opcao(c.id, c.nome)));
+    $('impConta').replaceChildren(opcao('', contas.length ? 'Escolha a conta…' : estado.carregando ? 'Carregando contas…' : 'Nenhuma conta ativa'), ...contas.map(c => opcao(c.id, c.nome)));
     $('impConta').value = contas.some(c => c.id === atual) ? atual : '';
-    irPara('importar');
   }
+  function abrirImportar() { irPara('importar'); }
   function limparImportacao() {
     Object.assign(imp, { linhas: [], extrato: null, contaId: '', arquivo: null });
     imp.leitura++;
