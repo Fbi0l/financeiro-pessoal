@@ -2,6 +2,13 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.2.1 — Segurança e backup
+
+- **Sair** desconecta só o aparelho atual; os outros continuam conectados.
+- **Cadastro de novos usuários desligado** no Supabase (só o titular entra).
+- **Backup diário criptografado** do banco, com ensaio automático de restauração. Veja [BACKUP.md](BACKUP.md).
+- **Migrações do banco versionadas** em `supabase/migrations`, idênticas às aplicadas no Supabase.
+
 ## Versão 0.2.0 — Lançamentos manuais
 
 - **+ Novo lançamento** (em qualquer tela): saída, entrada ou transferência entre contas, com valor, descrição, data, conta, categoria, situação (pago/recebido ou pendente) e observações.

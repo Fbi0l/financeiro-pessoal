@@ -148,6 +148,7 @@ function mensagemErroBanco(error) {
   const m = String(error?.message || '') + ' ' + String(error?.code || '');
   if (/fetch|network/i.test(m)) return 'Sem conexão com o servidor. Verifique sua internet e tente de novo.';
   if (/JWT|401|PGRST301/i.test(m)) return 'Sua sessão expirou. Entre de novo.';
+  if (error?.hint === 'categoria_tipo') return 'A categoria não combina com o tipo do lançamento (saída ou entrada). Escolha outra.';
   if (/23503/.test(m)) return 'A conta ou categoria escolhida não existe mais. Atualize a página.';
   if (/23514|22P02|23502/.test(m)) return 'Algum campo ficou inválido. Confira os dados.';
   if (/42501/.test(m)) return 'Sem permissão para esta ação.';
@@ -493,7 +494,8 @@ function iniciar() {
     if (error) aviso('loginMessage', mensagemErroLogin(error));
     else aviso('loginMessage', '');
   });
-  $('logoutBtn').addEventListener('click', async () => { await db.auth.signOut(); });
+  // "local": sai só deste aparelho; os outros continuam conectados.
+  $('logoutBtn').addEventListener('click', async () => { await db.auth.signOut({ scope: 'local' }); });
   $('refreshBtn').addEventListener('click', carregarDados);
   $('novoBtn').addEventListener('click', () => abrirFormulario());
   document.querySelectorAll('.nav-item[data-page]').forEach(b => b.addEventListener('click', () => irPara(b.dataset.page)));

@@ -74,4 +74,6 @@ assert.match(L.mensagemErroBanco({ message: 'Failed to fetch' }), /conexão/);
 assert.match(L.mensagemErroBanco({ code: '23503', message: 'fk' }), /não existe mais/);
 assert.match(L.mensagemErroBanco({ code: '23514', message: 'check' }), /inválido/);
 assert.match(L.mensagemErroBanco({ message: 'JWT expired' }), /sessão/);
+assert.match(L.mensagemErroBanco({ code: '23514', hint: 'categoria_tipo', message: 'x' }), /não combina/);
+assert.match(L.mensagemErroBanco({ code: '23514', message: 'x' }), /inválido/);
 console.log('Lancamentos aprovados: valores em reais, datas, validacao, totais e filtros.');

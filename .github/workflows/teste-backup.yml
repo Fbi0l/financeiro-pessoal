@@ -1,0 +1,44 @@
+name: Teste do backup
+
+# Ensaio com PostgreSQL local e dados ficticios: aplica as migracoes reais, faz o backup,
+# restaura e compara. Nao toca no Supabase. Roda quando o backup ou o banco mudam.
+on:
+  push:
+    paths:
+      - 'scripts/backup.sh'
+      - 'tests/backup-restauracao.sh'
+      - 'supabase/migrations/**'
+      - '.github/workflows/teste-backup.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ensaio:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: teste
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq age postgresql-client
+      - name: Clientes PostgreSQL 17 (mesma versao do servidor)
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSo /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Ensaio de backup e restauracao
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: teste
+        run: bash tests/backup-restauracao.sh

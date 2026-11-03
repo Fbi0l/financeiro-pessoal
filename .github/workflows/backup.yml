@@ -1,0 +1,75 @@
+name: Backup criptografado
+
+on:
+  schedule:
+    # Diariamente, 06h00 em Belem/PA (09h00 UTC). A conexao diaria tambem evita que o
+    # projeto gratuito do Supabase seja pausado por falta de uso.
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup-financeiro
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Backup do banco
+    # Comeca desligado: o agendamento so roda com a variavel BACKUP_ENABLED=true.
+    if: github.event_name == 'workflow_dispatch' || vars.BACKUP_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PGHOST: ${{ vars.SUPABASE_DB_HOST }}
+      PGPORT: ${{ vars.SUPABASE_DB_PORT }}
+      PGUSER: ${{ vars.SUPABASE_DB_USER }}
+      PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PGDATABASE: postgres
+      PGSSLMODE: require
+      BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Instalar age
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq age
+
+      - name: Backup dos dados (public + privado)
+        id: dados
+        env:
+          BACKUP_SCOPE: dados
+          BACKUP_OUTPUT_DIR: ${{ runner.temp }}/backup
+        run: bash scripts/backup.sh
+
+      - name: Backup das contas de login
+        id: auth
+        env:
+          BACKUP_SCOPE: auth
+          BACKUP_OUTPUT_DIR: ${{ runner.temp }}/backup
+        run: bash scripts/backup.sh
+
+      - name: Guardar somente os arquivos criptografados por 30 dias
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-financeiro-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/backup/*.age
+            ${{ runner.temp }}/backup/*.sha256
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Resumo
+        env:
+          DADOS: ${{ steps.dados.outputs.backup_name }}
+          CONTAS: ${{ steps.auth.outputs.backup_name }}
+        run: |
+          {
+            echo '### Backup criptografado criado'
+            echo "- Dados: \`$DADOS\`"
+            echo "- Contas de login: \`$CONTAS\`"
+            echo '- Conferido com pg_restore e SHA-256. So abre com a sua chave privada age.'
+          } >> "$GITHUB_STEP_SUMMARY"
