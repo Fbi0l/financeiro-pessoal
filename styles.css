@@ -316,7 +316,7 @@ button:disabled{opacity:.55;cursor:progress}
 
 /* Convites */
 .convite-novo{display:flex;gap:8px;flex-wrap:wrap}
-.convite-novo input{flex:1 1 220px;min-width:0;padding:10px 12px;border:1px solid #d5d9e6;border-radius:10px;font-size:15px}
+.convite-novo input{flex:1 1 220px;min-width:0;padding:10px 12px;border:1px solid #d5d9e6;border-radius:10px;background:#fff;font-size:16px}
 .convite-gerado{margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--pos-soft);color:#14442b}
 .convite-gerado p{margin:0 0 8px;font-size:13px;line-height:1.45}
 .convite-link{display:flex;gap:8px;flex-wrap:wrap}
@@ -327,3 +327,5 @@ button:disabled{opacity:.55;cursor:progress}
 .tag-off{background:#eef0f7;color:var(--muted)}
 #conviteCampos small{display:block;margin:-4px 0 6px;line-height:1.45}
 @media (max-width:760px){.versao-app{display:none}}
+/* iPhone: campo com letra menor que 16px dá zoom ao tocar e atrapalha a digitação */
+@media (max-width:760px){.filters select,.filters input,.convite-link input{font-size:16px}}
