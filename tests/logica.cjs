@@ -1,6 +1,6 @@
 // Funcoes puras do app.js: formatacao de moeda, soma de saldos, cores e mensagens de login.
 const assert = require('node:assert/strict');
-const { formatarMoeda, somarSaldos, corSegura, rotuloTipoConta, mensagemErroLogin, textoSimples } = require('../app.js');
+const { formatarMoeda, somarSaldos, corSegura, rotuloTipoConta, mensagemErroLogin, textoSimples, codigoDoLink, linkConvite } = require('../app.js');
 const limpa = s => s.replace(/\s/g, ' ');
 
 assert.equal(limpa(formatarMoeda(1234.5)), 'R$ 1.234,50');
@@ -31,4 +31,11 @@ assert.equal(textoSimples('## Resumo\n* item um\n* item *dois*\n\n\n\nfim `x`'),
 assert.equal(textoSimples('2 * 3 = 6'), '2 * 3 = 6', 'asterisco de conta fica');
 assert.equal(textoSimples(null), '');
 assert.equal(textoSimples('<img src=x onerror=alert(1)>'), '<img src=x onerror=alert(1)>', 'continua texto (exibido com textContent)');
+// Link de convite: so codigos no formato certo sao aceitos; o link sai sem restos do endereco atual.
+const COD = 'Mz_8yaX_GmVI_JUiP_9-3DMYTZu0hAym30Qxs0yo0-A';
+assert.equal(codigoDoLink('?convite=' + COD), COD);
+assert.equal(codigoDoLink('?x=1&convite=' + COD), COD);
+for (const ruim of ['', '?convite=', '?convite=curto', '?convite=' + COD + 'a', '?convite=' + COD.slice(1) + '%3C', '?outro=' + COD]) assert.equal(codigoDoLink(ruim), null, ruim);
+assert.equal(linkConvite('https://fbi0l.github.io/financeiro-pessoal/', COD), 'https://fbi0l.github.io/financeiro-pessoal/?convite=' + COD);
+assert.equal(linkConvite('https://fbi0l.github.io/financeiro-pessoal/?convite=velho#inicio', COD), 'https://fbi0l.github.io/financeiro-pessoal/?convite=' + COD);
 console.log('Logica aprovada: moeda, saldos, cores e mensagens de login.');

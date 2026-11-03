@@ -18,10 +18,10 @@
   <meta name="apple-mobile-web-app-title" content="Financeiro">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="application-name" content="Financeiro">
-  <link rel="stylesheet" href="styles.css?v=0.6.0">
+  <link rel="stylesheet" href="styles.css?v=0.7.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-  <script src="importar.js?v=0.6.0" defer></script>
-  <script src="app.js?v=0.6.0" defer></script>
+  <script src="importar.js?v=0.7.0" defer></script>
+  <script src="app.js?v=0.7.0" defer></script>
 </head>
 <body>
   <div id="bootView" class="boot" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Carregando…</span></div>
@@ -37,7 +37,25 @@
       <p id="loginMessage" class="message" role="alert" aria-live="assertive"></p>
       <small>Acesso restrito ao titular. Não há cadastro aberto.</small>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.6.0</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.7.0</footer>
+  </div>
+
+  <div id="conviteView" class="login-wrap hidden">
+    <form id="conviteForm" class="login-card" novalidate>
+      <div class="brand-mark" aria-hidden="true"><img src="assets/icone.svg" alt="" width="44" height="44"></div>
+      <h1 id="conviteTitulo">Você recebeu um convite</h1>
+      <p id="conviteSub" class="muted">Crie seu acesso ao Financeiro. Suas finanças ficam só com você: ninguém mais vê seus dados no app.</p>
+      <div id="conviteCampos">
+        <label>E-mail<input id="conviteEmail" type="email" autocomplete="username" inputmode="email" required></label>
+        <label>Crie uma senha<input id="conviteSenha" type="password" autocomplete="new-password" minlength="10" required></label>
+        <label>Repita a senha<input id="conviteSenha2" type="password" autocomplete="new-password" minlength="10" required></label>
+        <small>Pelo menos 10 caracteres. Dica: junte três ou quatro palavras aleatórias com hífen. Senhas que já vazaram na internet são recusadas.</small>
+        <button id="conviteBtn" class="primary full" type="submit">Criar meu acesso</button>
+      </div>
+      <p id="conviteMensagem" class="message" role="alert" aria-live="assertive"></p>
+      <button id="conviteIrLogin" class="secondary full hidden" type="button">Ir para o login</button>
+    </form>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.7.0</footer>
   </div>
 
   <div id="appView" class="app hidden">
@@ -52,6 +70,7 @@
       </nav>
       <div class="sidebar-bottom">
         <span id="userEmail" class="user-email"></span>
+        <small class="versao-app">Versão 0.7.0</small>
         <button id="logoutBtn" class="nav-item" type="button" aria-label="Sair" title="Sair"><span class="nav-ico" aria-hidden="true">↪</span><span>Sair</span></button>
       </div>
     </aside>
@@ -86,6 +105,20 @@
         <div class="panel">
           <div class="panel-head"><h2>Saldo por conta</h2></div>
           <ul id="contasResumo" class="list"></ul>
+        </div>
+        <div id="convitesPainel" class="panel hidden">
+          <div class="panel-head"><div><h2>Convidar pessoas</h2><p class="muted panel-sub">Só você vê esta área. Quem entrar pelo convite terá finanças próprias e separadas: não vê nada seu.</p></div></div>
+          <form id="conviteNovoForm" class="convite-novo">
+            <label class="sr-only" for="conviteRotulo">Para quem é o convite (opcional)</label>
+            <input id="conviteRotulo" maxlength="40" placeholder="Para quem? (opcional, ex.: Ana)" autocomplete="off">
+            <button id="conviteGerar" class="primary" type="submit">Gerar link de convite</button>
+          </form>
+          <div id="conviteGerado" class="convite-gerado hidden" role="status">
+            <p><strong>Link criado.</strong> Copie e envie agora: por segurança, ele não aparece de novo. Vale por 48 horas e funciona uma única vez.</p>
+            <div class="convite-link"><input id="conviteLink" readonly aria-label="Link do convite"><button id="conviteCopiar" class="secondary" type="button">Copiar</button><button id="conviteCompartilhar" class="secondary hidden" type="button">Compartilhar</button></div>
+          </div>
+          <p id="convitesMensagem" class="message" role="status" aria-live="polite"></p>
+          <ul id="convitesLista" class="list convites-lista"></ul>
         </div>
       </section>
 
@@ -209,6 +242,7 @@
         <details id="catArquivadasBox" class="panel arquivadas hidden"><summary>Categorias arquivadas <span id="catArqQtd" class="badge"></span></summary><ul id="catArquivadas" class="chips"></ul></details>
         <p class="muted ag-aviso">Toque numa categoria para renomear, trocar a cor, arquivar ou excluir.</p>
       </section>
+      <footer class="app-footer">© 2026 Fbiol · Versão 0.7.0</footer>
     </main>
   </div>
 

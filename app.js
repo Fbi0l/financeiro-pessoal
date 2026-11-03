@@ -198,6 +198,16 @@ function mensagemErroCadastro(error, oque) {
   return mensagemErroBanco(error);
 }
 
+/* ---------- Convites ---------- */
+/** Código do convite no endereço (?convite=...), só se tiver o formato certo (43 caracteres base64url). */
+function codigoDoLink(search) {
+  const c = new URLSearchParams(String(search || '')).get('convite') || '';
+  return /^[A-Za-z0-9_-]{43}$/.test(c) ? c : null;
+}
+function linkConvite(base, codigo) {
+  return String(base).replace(/[?#].*$/, '') + '?convite=' + encodeURIComponent(codigo);
+}
+
 /** Texto da IA para exibir como texto puro: tira marcações de Markdown que viriam como símbolos soltos. */
 function textoSimples(s) {
   return String(s ?? '')
@@ -214,7 +224,7 @@ function textoSimples(s) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    textoSimples, CORES, lerSaldo, saldoInicialPara, validarConta, validarCategoria, mensagemErroCadastro,
+    textoSimples, codigoDoLink, linkConvite, CORES, lerSaldo, saldoInicialPara, validarConta, validarCategoria, mensagemErroCadastro,
     formatarMoeda, somarSaldos, corSegura, rotuloTipoConta, mensagemErroLogin, lerValor, valorParaCampo,
     hojeISO, intervaloMes, somarMes, rotuloMes, dataValida, rotuloDia, validarLancamento, montarRegistro,
     totaisLancamentos, agruparPorDia, filtrarLancamentos, mensagemErroBanco
@@ -244,7 +254,7 @@ function iniciar() {
     editando: null, excluindo: null, carregando: false, pedidoLista: 0
   };
 
-  const mostrar = view => ['bootView', 'loginView', 'appView'].forEach(v => $(v).classList.toggle('hidden', v !== view));
+  const mostrar = view => ['bootView', 'loginView', 'conviteView', 'appView'].forEach(v => $(v).classList.toggle('hidden', v !== view));
   const aviso = (id, texto, ok = false) => { const e = $(id); e.textContent = texto || ''; e.classList.toggle('ok', ok); };
   const el = (tag, cls, texto) => { const e = document.createElement(tag); if (cls) e.className = cls; if (texto != null) e.textContent = texto; return e; };
   const ponto = cor => { const d = el('span', 'dot'); d.style.setProperty('--cor', corSegura(cor)); return d; };
@@ -968,12 +978,123 @@ function iniciar() {
   }
   prepararInstalacao();
 
+  /* ----- Convites: painel do administrador ----- */
+  const SITUACAO_CONVITE = { pendente: ['Aguardando', 'tag'], usado: ['Usado', 'tag tag-ok'], cancelado: ['Cancelado', 'tag tag-off'], vencido: ['Vencido', 'tag tag-off'], em_uso: ['Em uso agora', 'tag'] };
+  const fmtDataHora = iso => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  async function carregarConvites() {
+    const { data: admin, error } = await db.rpc('sou_administrador');
+    $('convitesPainel').classList.toggle('hidden', error || admin !== true);
+    if (error || admin !== true) return;
+    const { data, error: e2 } = await db.rpc('listar_convites');
+    if (e2) { aviso('convitesMensagem', 'Não foi possível carregar os convites.'); return; }
+    const itens = data.map(c => {
+      const li = el('li', 'list-item');
+      const info = el('div', 'list-info');
+      info.append(el('strong', null, c.rotulo || 'Convite sem apelido'));
+      info.append(el('small', null, c.situacao === 'usado' ? `Usado em ${fmtDataHora(c.usado_em)}` : `Criado em ${fmtDataHora(c.criado_em)} · vale até ${fmtDataHora(c.expira_em)}`));
+      const [rot, cls] = SITUACAO_CONVITE[c.situacao] || ['—', 'tag'];
+      li.append(info, el('span', cls, rot));
+      if (c.situacao === 'pendente') {
+        const b = el('button', 'ghost', 'Cancelar'); b.type = 'button';
+        b.addEventListener('click', async () => {
+          if (!(await confirmar({ titulo: 'Cancelar convite?', botao: 'Cancelar convite', texto: `O link ${c.rotulo ? `para ${c.rotulo} ` : ''}para de funcionar na hora.` }))) return;
+          const { error: e3 } = await db.rpc('cancelar_convite', { p_id: c.id });
+          aviso('convitesMensagem', e3 ? mensagemErroBanco(e3) : 'Convite cancelado.', !e3);
+          carregarConvites();
+        });
+        li.append(b);
+      }
+      return li;
+    });
+    if (itens.length) $('convitesLista').replaceChildren(...itens); else listaVazia($('convitesLista'), 'Nenhum convite gerado ainda.');
+  }
+  async function gerarConvite(ev) {
+    ev.preventDefault();
+    $('conviteGerar').disabled = true;
+    aviso('convitesMensagem', 'Gerando…', true);
+    const { data, error } = await db.rpc('criar_convite', { p_rotulo: $('conviteRotulo').value.trim() || null });
+    $('conviteGerar').disabled = false;
+    if (error || !data?.[0]?.codigo) {
+      const m = String(error?.message || '');
+      aviso('convitesMensagem', /pendentes|caracteres|administrador/.test(m) ? m : mensagemErroBanco(error));
+      return;
+    }
+    $('conviteLink').value = linkConvite(location.origin + location.pathname, data[0].codigo);
+    $('conviteGerado').classList.remove('hidden');
+    $('conviteCompartilhar').classList.toggle('hidden', !navigator.share);
+    $('conviteRotulo').value = '';
+    aviso('convitesMensagem', '');
+    $('conviteLink').select();
+    carregarConvites();
+  }
+  async function copiarConvite() {
+    try { await navigator.clipboard.writeText($('conviteLink').value); aviso('convitesMensagem', 'Link copiado. Agora é só colar na conversa com a pessoa.', true); }
+    catch (_) { $('conviteLink').select(); aviso('convitesMensagem', 'Selecione o link e copie (Ctrl+C).', true); }
+  }
+
+  /* ----- Convites: tela do convidado ----- */
+  const codigoConvite = codigoDoLink(location.search);
+  const conviteAtivo = { ligado: !!new URLSearchParams(location.search).get('convite') };
+  async function chamarCadastro(corpo) {
+    const { data, error } = await db.functions.invoke('registrar-convite', { body: corpo });
+    if (!error) return data;
+    let r = null; try { r = await error.context?.json?.(); } catch (_) { /* sem JSON */ }
+    const e = new Error(r?.erro || 'Não foi possível falar com o servidor. Verifique a conexão.'); e.codigo = r?.codigo_erro; throw e;
+  }
+  function conviteInvalido(msg) {
+    $('conviteCampos').classList.add('hidden');
+    $('conviteTitulo').textContent = 'Convite indisponível';
+    $('conviteSub').textContent = '';
+    aviso('conviteMensagem', msg);
+    $('conviteIrLogin').classList.remove('hidden');
+  }
+  async function abrirConvite(sessao) {
+    mostrar('conviteView');
+    if (!codigoConvite) { conviteInvalido('Este link de convite está incompleto. Confira se copiou o link inteiro.'); return; }
+    if (sessao) {
+      $('conviteCampos').classList.add('hidden');
+      aviso('conviteMensagem', `Este aparelho já está conectado como ${sessao.user.email}. Para criar outro acesso pelo convite, saia dessa conta primeiro.`);
+      $('conviteIrLogin').textContent = 'Sair desta conta e continuar';
+      $('conviteIrLogin').classList.remove('hidden');
+      $('conviteIrLogin').onclick = async () => { await db.auth.signOut({ scope: 'local' }); location.reload(); };
+      return;
+    }
+    aviso('conviteMensagem', 'Conferindo o convite…', true);
+    try {
+      const r = await chamarCadastro({ acao: 'verificar', codigo: codigoConvite });
+      $('conviteTitulo').textContent = r.rotulo ? `${r.rotulo}, você recebeu um convite` : 'Você recebeu um convite';
+      aviso('conviteMensagem', '');
+      $('conviteEmail').focus();
+    } catch (e) { conviteInvalido(e.message); }
+  }
+  async function concluirConvite(ev) {
+    ev.preventDefault();
+    const email = $('conviteEmail').value.trim(), senha = $('conviteSenha').value;
+    if (!email) { aviso('conviteMensagem', 'Informe seu e-mail.'); return; }
+    if (senha.length < 10) { aviso('conviteMensagem', 'A senha precisa ter pelo menos 10 caracteres.'); return; }
+    if (senha !== $('conviteSenha2').value) { aviso('conviteMensagem', 'As duas senhas não são iguais.'); return; }
+    $('conviteBtn').disabled = true;
+    aviso('conviteMensagem', 'Criando seu acesso…', true);
+    try {
+      await chamarCadastro({ acao: 'cadastrar', codigo: codigoConvite, email, senha });
+      aviso('conviteMensagem', 'Acesso criado! Entrando…', true);
+      conviteAtivo.ligado = false;
+      history.replaceState(null, '', location.pathname + '#inicio'); // tira o código do endereço
+      const { error } = await db.auth.signInWithPassword({ email, password: senha });
+      if (error) { mostrar('loginView'); $('email').value = email; aviso('loginMessage', 'Acesso criado. Entre com sua senha.', true); }
+    } catch (e) {
+      aviso('conviteMensagem', e.message);
+      if (e.codigo === 'expirado' || e.codigo === 'invalido') conviteInvalido(e.message);
+    } finally { $('conviteBtn').disabled = false; }
+  }
+
   /* ----- Sessão ----- */
   function entrarNoApp(session) {
     $('userEmail').textContent = session.user.email || '';
     mostrar('appView');
     irPara(location.hash.slice(1));
     carregarDados();
+    carregarConvites().catch(() => $('convitesPainel').classList.add('hidden'));
   }
   function sairDoApp() {
     if ($('txDialog').open) $('txDialog').close();
@@ -1050,7 +1171,15 @@ function iniciar() {
   zona.addEventListener('drop', ev => { ev.preventDefault(); const f = ev.dataTransfer?.files?.[0]; if (f) lerArquivo(f); });
 
   let sessaoAtual = null;
+  $('conviteForm').addEventListener('submit', concluirConvite);
+  $('conviteIrLogin').addEventListener('click', () => { if ($('conviteIrLogin').onclick) return; conviteAtivo.ligado = false; history.replaceState(null, '', location.pathname); mostrar('loginView'); });
+  $('conviteNovoForm').addEventListener('submit', gerarConvite);
+  $('conviteCopiar').addEventListener('click', copiarConvite);
+  $('conviteCompartilhar').addEventListener('click', () => navigator.share?.({ title: 'Convite para o Financeiro', text: 'Crie seu acesso ao Financeiro por este link (vale por 48 horas):', url: $('conviteLink').value }).catch(() => {}));
+
   db.auth.onAuthStateChange((evento, session) => {
+    // Link de convite aberto: mostra a tela de cadastro em vez do app.
+    if (conviteAtivo.ligado) { if (evento === 'INITIAL_SESSION') abrirConvite(session); sessaoAtual = session; return; }
     // Evita recarregar tudo a cada renovação automática do token.
     if (session && (!sessaoAtual || evento === 'SIGNED_IN' && sessaoAtual.user.id !== session.user.id)) entrarNoApp(session);
     if (!session) sairDoApp();

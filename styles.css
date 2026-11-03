@@ -309,3 +309,21 @@ button:disabled{opacity:.55;cursor:progress}
   .dialog-actions .spacer{flex-basis:100%;height:0}
   .dialog-actions>.primary,.dialog-actions>.secondary{flex:1}
 }
+
+/* Versao dentro do app */
+.versao-app{padding:0 14px;font-size:11px;color:#8e97bf}
+.app-footer{margin:28px 0 4px;padding-top:14px;border-top:1px solid var(--line);text-align:center;font-size:12px;color:var(--muted)}
+
+/* Convites */
+.convite-novo{display:flex;gap:8px;flex-wrap:wrap}
+.convite-novo input{flex:1 1 220px;min-width:0;padding:10px 12px;border:1px solid #d5d9e6;border-radius:10px;font-size:15px}
+.convite-gerado{margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--pos-soft);color:#14442b}
+.convite-gerado p{margin:0 0 8px;font-size:13px;line-height:1.45}
+.convite-link{display:flex;gap:8px;flex-wrap:wrap}
+.convite-link input{flex:1 1 260px;min-width:0;padding:9px 10px;border:1px solid #b9dcc6;border-radius:9px;background:#fff;font-size:13px;font-family:ui-monospace,Consolas,monospace}
+.convites-lista{margin-top:6px}
+.convites-lista .list-item{gap:10px}
+.tag-ok{background:var(--pos-soft);color:var(--pos)}
+.tag-off{background:#eef0f7;color:var(--muted)}
+#conviteCampos small{display:block;margin:-4px 0 6px;line-height:1.45}
+@media (max-width:760px){.versao-app{display:none}}

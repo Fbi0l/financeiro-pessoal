@@ -12,20 +12,7 @@ q() { psql -v ON_ERROR_STOP=1 -qAt "$@"; }
 for db in fin_origem fin_destino; do q -c "drop database if exists $db" -c "create database $db"; done
 
 # Simula o que o Supabase já fornece: papéis, esquema auth e auth.uid().
-simular_supabase() {
-  q -d "$1" <<'SQL'
-do $$ begin
-  if not exists (select 1 from pg_roles where rolname='anon') then create role anon nologin; end if;
-  if not exists (select 1 from pg_roles where rolname='authenticated') then create role authenticated nologin; end if;
-end $$;
-create schema auth;
-create table auth.users (id uuid primary key, email text);
-create table auth.identities (id uuid primary key, user_id uuid references auth.users(id));
-create function auth.uid() returns uuid language sql stable as $f$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $f$;
-grant usage on schema auth to anon, authenticated;
-grant usage on schema public to anon, authenticated;
-SQL
-}
+simular_supabase() { q -d "$1" -f "$raiz/tests/supabase-simulado.sql"; }
 simular_supabase fin_origem
 for m in "$raiz"/supabase/migrations/*.sql; do q -d fin_origem -f "$m"; done
 

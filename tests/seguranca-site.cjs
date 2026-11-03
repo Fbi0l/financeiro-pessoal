@@ -55,6 +55,9 @@ assert.match(html, /<link rel="manifest" href="manifest.webmanifest">/); assert.
 const sw = fs.readFileSync('sw.js', 'utf8');
 const versoesHtml = [...new Set([...html.matchAll(/\?v=(\d+\.\d+\.\d+)/g)].map(m => m[1]))];
 assert.equal(versoesHtml.length, 1, 'uma so versao nos arquivos da pagina');
+const versoesVisiveis = [...new Set([...html.matchAll(/Versão (\d+\.\d+\.\d+)/g)].map(m => m[1]))];
+assert.deepEqual(versoesVisiveis, versoesHtml, 'versao mostrada (login, convite, menu e rodape) igual a dos arquivos');
+assert.ok([...html.matchAll(/Versão \d/g)].length >= 4, 'versao aparece no login, no convite, no menu e no rodape do app');
 for (const arq of ['app.js', 'importar.js', 'styles.css']) assert.ok(sw.includes(`./${arq}?v=${versoesHtml[0]}`), `sw.js guarda ${arq} na versao da pagina`);
 assert.ok(sw.includes(`'financeiro-v${versoesHtml[0]}'`), 'nome do cache acompanha a versao');
 assert.ok(!/supabase\.co/.test(sw), 'service worker nao menciona o Supabase');
