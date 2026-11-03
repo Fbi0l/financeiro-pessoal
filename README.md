@@ -2,6 +2,11 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.2.2 — Trava de categoria no banco
+
+- O banco recusa uma saída com categoria de entrada (e vice-versa), com mensagem clara no app. Protege a futura importação de extratos.
+- Removidas permissões que o app não usa: apagar tabela inteira, gatilhos e escrita na visão de saldos.
+
 ## Versão 0.2.1 — Segurança e backup
 
 - **Sair** desconecta só o aparelho atual; os outros continuam conectados.
