@@ -2,6 +2,17 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.4.0 — Assistente com IA
+
+- **Menu Assistente:**
+  - **Análise do mês:** resumo e cartões com alertas, economias estimadas, pontos positivos e dicas. Os números são calculados pelo app (em centavos); a IA só interpreta.
+  - **Chat:** perguntas livres ("quanto gastei com Uber em outubro?"). A IA consulta seus lançamentos por ferramentas **só de leitura**, com limites de período e quantidade.
+- **Onde roda:** função `agente` no Supabase (`supabase/functions/agente`). Exige login e lê apenas os dados do usuário (regras de acesso do banco). Só aceita chamadas do site do app. Não grava nada e não registra dados financeiros em log.
+- **IA:** Cloudflare Workers AI (modelo `gpt-oss-120b`), no plano gratuito. A Cloudflare declara que não guarda nem usa os dados para treinar modelos. Também aceita o Groq: basta trocar os segredos.
+- **Segredos** (no Supabase, nunca no código): `CLOUDFLARE_ACCOUNT_ID` e `CLOUDFLARE_AI_TOKEN` (ou `GROQ_API_KEY`). Opcional: `AGENTE_MODELO`.
+- Descrições de extrato são tratadas como dados: a IA é instruída a ignorar textos que pareçam instruções, as ferramentas não alteram nada e as respostas aparecem como texto puro.
+- Ao atingir o limite gratuito do dia, o app avisa e volta a funcionar no dia seguinte, sem cobrança.
+
 ## Versão 0.3.0 — Importação de extrato
 
 - **Lançamentos → Importar extrato:** escolha a conta e o arquivo **OFX** ou **CSV** (Nubank ou genérico, com `;` ou `,`, colunas de valor ou de crédito/débito). O arquivo é lido no próprio aparelho.
@@ -70,4 +81,4 @@ O esquema foi criado pelas migrações `fase1_base_financeira` e `cor_especie_ne
 
 1. Cartão de crédito, se usar.
 2. Edição de contas (saldo inicial) e categorias.
-3. Análise do mês, limites por categoria e instalação no celular (PWA).
+3. Limites por categoria, memória de preferências do assistente e instalação no celular (PWA).

@@ -1,6 +1,6 @@
 // Funcoes puras do app.js: formatacao de moeda, soma de saldos, cores e mensagens de login.
 const assert = require('node:assert/strict');
-const { formatarMoeda, somarSaldos, corSegura, rotuloTipoConta, mensagemErroLogin } = require('../app.js');
+const { formatarMoeda, somarSaldos, corSegura, rotuloTipoConta, mensagemErroLogin, textoSimples } = require('../app.js');
 const limpa = s => s.replace(/\s/g, ' ');
 
 assert.equal(limpa(formatarMoeda(1234.5)), 'R$ 1.234,50');
@@ -25,4 +25,10 @@ assert.equal(mensagemErroLogin({ message: 'Invalid login credentials' }), 'E-mai
 assert.equal(mensagemErroLogin({ status: 429, message: 'x' }), 'Muitas tentativas. Aguarde alguns minutos e tente de novo.');
 assert.equal(mensagemErroLogin({ message: 'Failed to fetch' }), 'Sem conexão com o servidor. Verifique sua internet.');
 assert.equal(mensagemErroLogin(undefined), 'Não foi possível entrar. Tente novamente.');
+// Texto da IA exibido como texto puro (sem simbolos de Markdown soltos).
+assert.equal(textoSimples('Você gastou **R$ 87,40** com Uber.'), 'Você gastou R$ 87,40 com Uber.');
+assert.equal(textoSimples('## Resumo\n* item um\n* item *dois*\n\n\n\nfim `x`'), 'Resumo\n- item um\n- item dois\n\nfim x');
+assert.equal(textoSimples('2 * 3 = 6'), '2 * 3 = 6', 'asterisco de conta fica');
+assert.equal(textoSimples(null), '');
+assert.equal(textoSimples('<img src=x onerror=alert(1)>'), '<img src=x onerror=alert(1)>', 'continua texto (exibido com textContent)');
 console.log('Logica aprovada: moeda, saldos, cores e mensagens de login.');

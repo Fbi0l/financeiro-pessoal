@@ -155,8 +155,23 @@ function mensagemErroBanco(error) {
   return 'Não foi possível salvar. Tente novamente.';
 }
 
+/** Texto da IA para exibir como texto puro: tira marcações de Markdown que viriam como símbolos soltos. */
+function textoSimples(s) {
+  return String(s ?? '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/```[a-z]*\n?|```/gi, '')
+    .replace(/\*\*([^*\n]+)\*\*|__([^_\n]+)__/g, (_, a, b) => a ?? b)
+    .replace(/(^|\s)\*([^*\n]+)\*(?=\s|[.,;:!?)]|$)/g, '$1$2')
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/^\s*[*•]\s+/gm, '- ')
+    .replace(/`([^`\n]+)`/g, '$1')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
+    textoSimples,
     formatarMoeda, somarSaldos, corSegura, rotuloTipoConta, mensagemErroLogin, lerValor, valorParaCampo,
     hojeISO, intervaloMes, somarMes, rotuloMes, dataValida, rotuloDia, validarLancamento, montarRegistro,
     totaisLancamentos, agruparPorDia, filtrarLancamentos, mensagemErroBanco
@@ -175,6 +190,7 @@ function iniciar() {
     inicio: { titulo: 'Início', eyebrow: 'VISÃO GERAL' },
     lancamentos: { titulo: 'Lançamentos', eyebrow: 'ENTRADAS E SAÍDAS' },
     importar: { titulo: 'Importar extrato', eyebrow: 'LANÇAMENTOS', menu: 'lancamentos' },
+    assistente: { titulo: 'Assistente', eyebrow: 'ANÁLISE COM IA' },
     contas: { titulo: 'Contas', eyebrow: 'ONDE ESTÁ O DINHEIRO' },
     categorias: { titulo: 'Categorias', eyebrow: 'ORGANIZAÇÃO' }
   };
@@ -629,6 +645,93 @@ function iniciar() {
     }
   }
 
+  /* ----- Assistente (IA) ----- */
+  const ag = { ano: Number(hoje.slice(0, 4)), mes: Number(hoje.slice(5, 7)), conversa: [], ocupado: false };
+  const TIPO_DESTAQUE = { alerta: ['!', 'Atenção'], economia: ['$', 'Economia'], positivo: ['✓', 'Ponto positivo'], dica: ['i', 'Dica'] };
+
+  async function chamarAgente(corpo) {
+    const { data, error } = await db.functions.invoke('agente', { body: corpo });
+    if (!error) return data;
+    let msg = 'Não foi possível falar com o assistente. Verifique a conexão e tente de novo.';
+    try { const r = await error.context?.json?.(); if (r?.erro) msg = r.erro; } catch (_) { /* resposta sem JSON */ }
+    throw new Error(msg);
+  }
+  function mostrarMesAgente() {
+    $('agMesRotulo').textContent = rotuloMes(ag.ano, ag.mes);
+    const atual = ag.ano * 12 + ag.mes >= Number(hoje.slice(0, 4)) * 12 + Number(hoje.slice(5, 7));
+    $('agMesSeguinte').disabled = atual;
+  }
+  function cartaoDestaque(d) {
+    const [ico, rotulo] = TIPO_DESTAQUE[d.tipo] || TIPO_DESTAQUE.dica;
+    const card = el('article', 'ag-card ' + d.tipo);
+    const topo = el('div', 'ag-card-top');
+    const i = el('span', 'ag-ico', ico); i.setAttribute('aria-hidden', 'true');
+    topo.append(i, el('span', 'ag-tipo', rotulo));
+    if (d.prioridade === 'alta') topo.append(el('span', 'tag tag-alta', 'prioridade alta'));
+    card.append(topo, el('h3', null, textoSimples(d.titulo)), el('p', null, textoSimples(d.detalhe)));
+    if (d.economia_mensal_estimada) card.append(el('p', 'ag-economia', `Economia estimada: ${formatarMoeda(d.economia_mensal_estimada)} por mês`));
+    return card;
+  }
+  async function analisarMes() {
+    if (ag.ocupado) return;
+    ag.ocupado = true;
+    $('agAnalisar').disabled = true;
+    $('agResultado').classList.add('hidden');
+    aviso('agMensagem', 'Analisando seus lançamentos… isso leva uns 15 segundos.', true);
+    try {
+      const mes = `${ag.ano}-${String(ag.mes).padStart(2, '0')}`;
+      const r = await chamarAgente({ modo: 'relatorio', mes });
+      $('agResumo').textContent = textoSimples(r.relatorio.resumo);
+      $('agDestaques').replaceChildren(...r.relatorio.destaques.map(cartaoDestaque));
+      $('agResultado').classList.remove('hidden');
+      aviso('agMensagem', '');
+    } catch (e) {
+      aviso('agMensagem', e.message);
+    } finally {
+      ag.ocupado = false;
+      $('agAnalisar').disabled = false;
+    }
+  }
+  function bolha(papel, texto) {
+    const b = el('div', 'msg ' + (papel === 'user' ? 'msg-eu' : papel === 'erro' ? 'msg-erro' : 'msg-ia'), papel === 'user' ? texto : textoSimples(texto));
+    $('agChat').append(b);
+    b.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return b;
+  }
+  async function perguntar(texto) {
+    texto = String(texto || '').trim();
+    if (!texto || ag.ocupado) return;
+    ag.ocupado = true;
+    $('agEnviar').disabled = true;
+    $('agSugestoes').classList.add('hidden');
+    $('agLimpar').classList.remove('hidden');
+    $('agPergunta').value = '';
+    bolha('user', texto);
+    ag.conversa.push({ role: 'user', content: texto });
+    const pensando = bolha('ia', 'Consultando seus lançamentos…');
+    pensando.classList.add('pensando');
+    try {
+      const r = await chamarAgente({ modo: 'chat', mensagens: ag.conversa.slice(-12) });
+      pensando.remove();
+      bolha('ia', r.resposta);
+      ag.conversa.push({ role: 'assistant', content: r.resposta });
+    } catch (e) {
+      pensando.remove();
+      ag.conversa.pop(); // a pergunta sem resposta não entra no histórico
+      bolha('erro', e.message);
+    } finally {
+      ag.ocupado = false;
+      $('agEnviar').disabled = false;
+      $('agPergunta').focus();
+    }
+  }
+  function limparConversa() {
+    ag.conversa = [];
+    $('agChat').replaceChildren();
+    $('agSugestoes').classList.remove('hidden');
+    $('agLimpar').classList.add('hidden');
+  }
+
   /* ----- Sessão ----- */
   function entrarNoApp(session) {
     $('userEmail').textContent = session.user.email || '';
@@ -641,6 +744,9 @@ function iniciar() {
     if ($('confirmDialog').open) $('confirmDialog').close();
     Object.assign(estado, { contas: [], categorias: [], lancamentos: [], editando: null, excluindo: null });
     limparImportacao();
+    limparConversa();
+    $('agResultado').classList.add('hidden');
+    $('agDestaques').replaceChildren();
     ['saldoTotal', 'mesEntradas', 'mesSaidas', 'mesResultado'].forEach(id => { $(id).textContent = '—'; });
     ['contasResumo', 'contasLista', 'catDespesas', 'catReceitas', 'listaLancamentos'].forEach(id => $(id).replaceChildren());
     $('password').value = '';
@@ -677,6 +783,14 @@ function iniciar() {
   $('filtroBusca').addEventListener('input', desenharLista);
   $('txDialog').addEventListener('close', () => { estado.editando = null; });
   $('abrirImportar').addEventListener('click', abrirImportar);
+  mostrarMesAgente();
+  $('agMesAnterior').addEventListener('click', () => { Object.assign(ag, somarMes(ag.ano, ag.mes, -1)); mostrarMesAgente(); $('agResultado').classList.add('hidden'); });
+  $('agMesSeguinte').addEventListener('click', () => { Object.assign(ag, somarMes(ag.ano, ag.mes, 1)); mostrarMesAgente(); $('agResultado').classList.add('hidden'); });
+  $('agAnalisar').addEventListener('click', analisarMes);
+  $('agForm').addEventListener('submit', ev => { ev.preventDefault(); perguntar($('agPergunta').value); });
+  $('agPergunta').addEventListener('keydown', ev => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); perguntar($('agPergunta').value); } });
+  document.querySelectorAll('#agSugestoes .chip-btn').forEach(b => b.addEventListener('click', () => perguntar(b.textContent)));
+  $('agLimpar').addEventListener('click', limparConversa);
   $('voltarLancamentos').addEventListener('click', () => { limparImportacao(); irPara('lancamentos'); });
   $('impCancelar').addEventListener('click', () => { limparImportacao(); irPara('lancamentos'); });
   $('impArquivo').addEventListener('change', () => lerArquivo($('impArquivo').files[0]));

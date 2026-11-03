@@ -10,10 +10,10 @@
   <meta name="theme-color" content="#1e2547">
   <title>Financeiro | Meu dinheiro</title>
   <link rel="icon" href="assets/icone.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=0.3.0">
+  <link rel="stylesheet" href="styles.css?v=0.4.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-  <script src="importar.js?v=0.3.0" defer></script>
-  <script src="app.js?v=0.3.0" defer></script>
+  <script src="importar.js?v=0.4.0" defer></script>
+  <script src="app.js?v=0.4.0" defer></script>
 </head>
 <body>
   <div id="bootView" class="boot" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Carregando…</span></div>
@@ -29,7 +29,7 @@
       <p id="loginMessage" class="message" role="alert" aria-live="assertive"></p>
       <small>Acesso restrito ao titular. Não há cadastro aberto.</small>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.3.0</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.4.0</footer>
   </div>
 
   <div id="appView" class="app hidden">
@@ -38,12 +38,13 @@
       <nav class="nav">
         <button class="nav-item active" type="button" data-page="inicio" aria-current="page"><span class="nav-ico" aria-hidden="true">◎</span><span>Início</span></button>
         <button class="nav-item" type="button" data-page="lancamentos"><span class="nav-ico" aria-hidden="true">⇅</span><span>Lançamentos</span></button>
+        <button class="nav-item" type="button" data-page="assistente"><span class="nav-ico" aria-hidden="true">✦</span><span>Assistente</span></button>
         <button class="nav-item" type="button" data-page="contas"><span class="nav-ico" aria-hidden="true">▣</span><span>Contas</span></button>
         <button class="nav-item" type="button" data-page="categorias"><span class="nav-ico" aria-hidden="true">◈</span><span>Categorias</span></button>
       </nav>
       <div class="sidebar-bottom">
         <span id="userEmail" class="user-email"></span>
-        <button id="logoutBtn" class="nav-item" type="button"><span class="nav-ico" aria-hidden="true">↪</span><span>Sair</span></button>
+        <button id="logoutBtn" class="nav-item" type="button" aria-label="Sair" title="Sair"><span class="nav-ico" aria-hidden="true">↪</span><span>Sair</span></button>
       </div>
     </aside>
 
@@ -138,6 +139,43 @@
             </div>
           </div>
         </div>
+      </section>
+
+      <section id="assistentePage" class="page hidden">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h2>Análise do mês</h2><p class="muted panel-sub">Um resumo do seu mês com sugestões do que melhorar.</p></div>
+            <div class="month-nav" role="group" aria-label="Mês da análise">
+              <button id="agMesAnterior" class="secondary icon-btn" type="button" aria-label="Mês anterior">‹</button>
+              <strong id="agMesRotulo" class="month-label" aria-live="polite"></strong>
+              <button id="agMesSeguinte" class="secondary icon-btn" type="button" aria-label="Próximo mês">›</button>
+            </div>
+          </div>
+          <button id="agAnalisar" class="primary" type="button">✦ Analisar este mês</button>
+          <p id="agMensagem" class="message" role="status" aria-live="polite"></p>
+          <div id="agResultado" class="hidden">
+            <p id="agResumo" class="ag-resumo"></p>
+            <div id="agDestaques" class="ag-cards"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><div><h2>Pergunte ao assistente</h2><p class="muted panel-sub">Ele consulta seus lançamentos para responder.</p></div>
+            <button id="agLimpar" class="ghost hidden" type="button">Nova conversa</button></div>
+          <div id="agChat" class="chat" aria-live="polite"></div>
+          <div id="agSugestoes" class="chips sugestoes">
+            <button class="chip chip-btn" type="button">Onde posso economizar este mês?</button>
+            <button class="chip chip-btn" type="button">Quanto gastei com alimentação este mês?</button>
+            <button class="chip chip-btn" type="button">Quais assinaturas eu pago?</button>
+            <button class="chip chip-btn" type="button">Comparando com o mês passado, o que mudou?</button>
+          </div>
+          <form id="agForm" class="chat-form">
+            <label class="sr-only" for="agPergunta">Sua pergunta</label>
+            <textarea id="agPergunta" rows="1" maxlength="1000" placeholder="Pergunte sobre seus gastos…"></textarea>
+            <button id="agEnviar" class="primary" type="submit" aria-label="Enviar pergunta">Enviar</button>
+          </form>
+        </div>
+        <p class="muted ag-aviso">As sugestões são geradas por IA a partir dos seus lançamentos e podem conter erros; confira antes de decidir. Para responder, os dados consultados são enviados à IA da Cloudflare, que não os guarda nem os usa para treinar modelos.</p>
       </section>
 
       <section id="contasPage" class="page hidden">
