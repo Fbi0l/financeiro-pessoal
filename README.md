@@ -2,6 +2,13 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.8.0 — Apagar uma importação
+
+- **Importações recentes** (na página Importar extrato): cada extrato importado aparece com arquivo, conta, período, quantidade e totais, e um botão **Apagar**.
+- Apagar remove **só os lançamentos daquela importação**, numa única operação do banco (chave estrangeira com `on delete cascade`). Lançamentos digitados à mão e de outras importações não são afetados. Depois de apagar, o mesmo extrato pode ser importado de novo.
+- Serve para extrato importado na conta errada, por engano, ou repetido em outro formato (OFX e CSV do mesmo período têm identificadores diferentes). Importar o mesmo arquivo duas vezes continua sem duplicar nada.
+- Migração `historico_importacoes`: tabela `importacoes` (sem edição; cada pessoa só vê e apaga as próprias) e visão `importacoes_resumo`. Lançamentos importados antes desta versão não têm importação registrada e não aparecem na lista.
+
 ## Versão 0.7.1 — Extrato do Banco do Brasil
 
 - **CSV do Banco do Brasil** reconhecido nos dois formatos (atual, com "Detalhes" e "Tipo Lançamento", e o antigo, com "Dependencia Origem"). O **OFX** do BB já funcionava.

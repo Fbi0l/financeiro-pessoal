@@ -7,6 +7,8 @@ on:
     paths:
       - 'scripts/backup.sh'
       - 'tests/backup-restauracao.sh'
+      - 'tests/convites-db.sh'
+      - 'tests/importacoes-db.sh'
       - 'supabase/migrations/**'
       - '.github/workflows/teste-backup.yml'
   workflow_dispatch:
@@ -42,3 +44,12 @@ jobs:
           PGUSER: postgres
           PGPASSWORD: teste
         run: bash tests/backup-restauracao.sh
+      - name: Regras do banco (convites e historico de importacoes)
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: teste
+        run: |
+          bash tests/convites-db.sh
+          bash tests/importacoes-db.sh

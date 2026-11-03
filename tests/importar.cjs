@@ -159,8 +159,13 @@ assert.deepEqual(previa.map(l => [l.tipo, l.valor]), [['despesa', 45.9], ['recei
 const res = I.resumoPrevia(previa);
 assert.deepEqual([res.total, res.novas, res.importadas, res.parecidas, res.incluidas, res.entradas, res.saidas, res.inicio, res.fim],
   [4, 2, 1, 1, 2, 0, 47, '2026-10-02', '2026-10-10']);
-const regs = I.registrosParaGravar(previa, 'conta-1');
+const regs = I.registrosParaGravar(previa, 'conta-1', 'imp-1');
 assert.equal(regs.length, 2);
 assert.deepEqual(regs[0], { tipo: 'despesa', descricao: 'UBER *TRIP - Compra no débito', valor: 23.5, data: '2026-10-10', conta_id: 'conta-1',
-  conta_destino_id: null, categoria_id: 'tra', pago: true, observacoes: null, origem: 'importacao', id_externo: 'b:20261010001' });
-console.log('Importacao aprovada: OFX 1 e 2, CSV Nubank, Banco do Brasil e generico, acentos, saldo descartado, identificadores, categorias e previa.');
+  conta_destino_id: null, categoria_id: 'tra', pago: true, observacoes: null, origem: 'importacao', id_externo: 'b:20261010001', importacao_id: 'imp-1' });
+// Registro da importacao: periodo das linhas marcadas, nome do arquivo limpo e limitado.
+assert.deepEqual(I.dadosDaImportacao(previa, { formato: 'OFX' }, '  extrato   outubro.ofx ', 'conta-1'),
+  { conta_id: 'conta-1', arquivo: 'extrato outubro.ofx', formato: 'OFX', periodo_inicio: regs.map(r => r.data).sort()[0], periodo_fim: regs.map(r => r.data).sort().pop() });
+assert.equal(I.dadosDaImportacao(previa, null, 'x'.repeat(300), 'c').arquivo.length, 120);
+assert.equal(I.dadosDaImportacao(previa.map(l => ({ ...l, incluir: false })), null, 'a.ofx', 'c'), null, 'nada marcado, nada a registrar');
+console.log('Importacao aprovada: OFX 1 e 2, CSV Nubank, Banco do Brasil e generico, acentos, saldo descartado, identificadores, categorias, previa e registro da importacao.');

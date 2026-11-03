@@ -309,16 +309,23 @@ const Importar = (() => {
     r.entradas = ent / 100; r.saidas = sai / 100;
     return r;
   }
-  /** Registros prontos para gravar (só as linhas marcadas). */
-  function registrosParaGravar(linhas, contaId) {
+  /** Registros prontos para gravar (só as linhas marcadas), ligados ao registro da importação. */
+  function registrosParaGravar(linhas, contaId, importacaoId = null) {
     return linhas.filter(l => l.incluir).map(l => ({
       tipo: l.tipo, descricao: l.descricao, valor: l.valor, data: l.data, conta_id: contaId,
       conta_destino_id: null, categoria_id: l.categoria_id || null, pago: true, observacoes: null,
-      origem: 'importacao', id_externo: l.id_externo
+      origem: 'importacao', id_externo: l.id_externo, importacao_id: importacaoId
     }));
   }
+  /** Registro da importação (para poder apagá-la depois): nome do arquivo, formato e período das linhas marcadas. */
+  function dadosDaImportacao(linhas, extrato, nomeArquivo, contaId) {
+    const datas = linhas.filter(l => l.incluir).map(l => l.data).sort();
+    if (!datas.length) return null;
+    const arquivo = limparEspacos(nomeArquivo).slice(0, 120) || 'extrato';
+    return { conta_id: contaId, arquivo, formato: String(extrato?.formato || 'Extrato').slice(0, 40), periodo_inicio: datas[0], periodo_fim: datas[datas.length - 1] };
+  }
 
-  return { decodificar, lerNumero, lerData, lerOFX, lerCSV, lerExtrato, idsExternos, chaveDescricao, sugerirCategoria, montarHistorico, prepararPrevia, resumoPrevia, registrosParaGravar };
+  return { decodificar, lerNumero, lerData, lerOFX, lerCSV, lerExtrato, idsExternos, chaveDescricao, sugerirCategoria, montarHistorico, prepararPrevia, resumoPrevia, registrosParaGravar, dadosDaImportacao };
 })();
 
 if (typeof module !== 'undefined') module.exports = Importar;

@@ -278,7 +278,7 @@ function iniciar() {
     $('pageTitle').textContent = PAGINAS[pagina].titulo;
     $('pageEyebrow').textContent = PAGINAS[pagina].eyebrow;
     if (location.hash !== '#' + pagina) history.replaceState(null, '', '#' + pagina);
-    if (pagina === 'importar') preencherContasImportacao();
+    if (pagina === 'importar') { preencherContasImportacao(); carregarImportacoes(); }
   }
 
   /* ----- Contas, categorias e Início ----- */
@@ -828,13 +828,18 @@ function iniciar() {
   }
 
   async function confirmarImportacao() {
-    const registros = Importar.registrosParaGravar(imp.linhas, imp.contaId);
-    if (!registros.length || imp.gravando) return;
+    const dados = Importar.dadosDaImportacao(imp.linhas, imp.extrato, imp.arquivo?.name, imp.contaId);
+    if (!dados || imp.gravando) return;
     imp.gravando = true;
     $('impConfirmar').disabled = true;
     $('impCancelar').disabled = true;
-    let gravados = 0;
+    let gravados = 0, importacaoId = null;
     try {
+      // 1) Registro da importação: é por ele que dá para apagar tudo o que este arquivo trouxe.
+      const { data: reg, error: errReg } = await db.from('importacoes').insert(dados).select('id').single();
+      if (errReg) throw errReg;
+      importacaoId = reg.id;
+      const registros = Importar.registrosParaGravar(imp.linhas, imp.contaId, importacaoId);
       // Em lotes; se o mesmo movimento já existir (outra aba, outro aparelho), o banco ignora em vez de duplicar.
       for (let i = 0; i < registros.length; i += 400) {
         const lote = registros.slice(i, i + 400);
@@ -846,15 +851,19 @@ function iniciar() {
         gravados += data.length;
       }
       const ignorados = registros.length - gravados;
-      const ultima = imp.linhas.filter(l => l.incluir).map(l => l.data).sort().pop();
+      // Nada novo (tudo já existia): o registro vazio não serve para nada.
+      if (!gravados) await db.from('importacoes').delete().eq('id', importacaoId);
+      const ultima = dados.periodo_fim;
       limparImportacao();
       estado.ano = Number(ultima.slice(0, 4)); estado.mes = Number(ultima.slice(5, 7));
       irPara('lancamentos');
       await carregarDados();
       aviso('globalMessage', `${gravados} ${gravados === 1 ? 'lançamento importado' : 'lançamentos importados'}` +
-        (ignorados ? ` (${ignorados} já existia${ignorados === 1 ? '' : 'm'} e não foi duplicado${ignorados === 1 ? '' : 's'}).` : '.'), true);
+        (ignorados ? ` (${ignorados} já existia${ignorados === 1 ? '' : 'm'} e não foi duplicado${ignorados === 1 ? '' : 's'}).` : '.') +
+        (gravados ? ' Se foi engano, apague em Importar extrato → Importações recentes.' : ''), true);
     } catch (e) {
       console.error(e);
+      if (importacaoId && !gravados) await db.from('importacoes').delete().eq('id', importacaoId); // não deixa registro vazio
       aviso('impMensagem', (gravados ? `${gravados} foram gravados antes do erro. Ao tentar de novo, eles não serão duplicados. ` : '') + mensagemErroBanco(e));
       if (gravados) await carregarDados();
     } finally {
@@ -862,6 +871,46 @@ function iniciar() {
       $('impCancelar').disabled = false;
       if (imp.linhas.length) desenharResumo();
     }
+  }
+
+  /* ----- Importações recentes (apagar uma importação inteira) ----- */
+  async function carregarImportacoes() {
+    const { data, error } = await db.from('importacoes_resumo')
+      .select('id,conta_id,arquivo,formato,periodo_inicio,periodo_fim,criado_em,quantidade,entradas,saidas')
+      .order('criado_em', { ascending: false }).limit(30);
+    if (error) { aviso('impHistMensagem', 'Não foi possível carregar as importações.'); return; }
+    const nomeConta = id => (estado.contas.find(c => c.id === id) || {}).nome || 'Conta';
+    const itens = data.map(i => {
+      const li = el('li', 'list-item');
+      const info = el('div', 'list-info');
+      info.append(el('strong', null, `${i.arquivo} · ${nomeConta(i.conta_id)}`));
+      const qtd = i.quantidade === 1 ? '1 lançamento' : `${i.quantidade} lançamentos`;
+      const valores = [Number(i.entradas) ? `entradas ${formatarMoeda(Number(i.entradas))}` : '', Number(i.saidas) ? `saídas ${formatarMoeda(Number(i.saidas))}` : ''].filter(Boolean).join(', ');
+      info.append(el('small', null, `Importado em ${fmtDataHora(i.criado_em)} · ${formatarData(i.periodo_inicio)} a ${formatarData(i.periodo_fim)} · ${qtd}${valores ? ` (${valores})` : ''}`));
+      const b = el('button', 'ghost danger-ghost', 'Apagar'); b.type = 'button';
+      b.setAttribute('aria-label', `Apagar a importação ${i.arquivo}`);
+      b.addEventListener('click', () => apagarImportacao(i, nomeConta(i.conta_id)));
+      li.append(info, b);
+      return li;
+    });
+    aviso('impHistMensagem', '');
+    if (itens.length) $('impHistorico').replaceChildren(...itens); else listaVazia($('impHistorico'), 'Nenhuma importação ainda.');
+  }
+  async function apagarImportacao(i, conta) {
+    const qtd = i.quantidade === 1 ? 'O lançamento importado' : `Os ${i.quantidade} lançamentos importados`;
+    const ok = await confirmar({
+      titulo: 'Apagar importação?', botao: 'Apagar importação',
+      texto: i.quantidade
+        ? `${qtd} de "${i.arquivo}" na conta ${conta} (${formatarData(i.periodo_inicio)} a ${formatarData(i.periodo_fim)}) ${i.quantidade === 1 ? 'será excluído' : 'serão excluídos'}, inclusive se você editou depois. Lançamentos digitados à mão e de outras importações não são afetados.`
+        : `"${i.arquivo}" não tem mais lançamentos. O registro será removido da lista.`
+    });
+    if (!ok) return;
+    aviso('impHistMensagem', 'Apagando…', true);
+    const { error } = await db.from('importacoes').delete().eq('id', i.id);
+    if (error) { aviso('impHistMensagem', mensagemErroBanco(error)); return; }
+    await carregarImportacoes();
+    aviso('impHistMensagem', i.quantidade ? `Importação apagada: ${i.quantidade} ${i.quantidade === 1 ? 'lançamento excluído' : 'lançamentos excluídos'}.` : 'Registro removido.', true);
+    carregarDados();
   }
 
   /* ----- Assistente (IA) ----- */
