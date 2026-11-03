@@ -2,6 +2,14 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.7.0 — Convites e versão dentro do app
+
+- **Convites (só o titular):** em Início, o painel **Convites** gera um link de uso único que vale 48 horas. A pessoa abre o link, escolhe e-mail e senha e entra com **finanças próprias e separadas** (contas e categorias padrão criadas na hora). Ela não vê nada do titular, e o titular não vê nada dela.
+- O link guarda um código aleatório de 43 caracteres; o banco só conhece o hash SHA-256 dele. Convites podem ser cancelados antes do uso; no máximo 10 pendentes.
+- A conta é criada pela função `registrar-convite`, que reserva o convite numa única operação (o mesmo link não serve duas vezes), recusa senhas já vazadas (Have I Been Pwned, por k-anonimato) e não revela se um e-mail já existe.
+- O painel só aparece para o administrador (`privado.administradores`); as funções do banco também conferem isso.
+- **Versão dentro do app:** além da tela de login, a versão aparece no menu lateral e no rodapé.
+
 ## Versão 0.6.0 — Contas e categorias editáveis
 
 - **Contas:** criar, editar (nome, tipo, cor), arquivar, desarquivar e excluir (só sem lançamentos; as outras podem ser arquivadas).
@@ -91,6 +99,7 @@ O esquema foi criado pelas migrações `fase1_base_financeira` e `cor_especie_ne
 - Chaves estrangeiras compostas impedem que um lançamento aponte para conta ou categoria de outro usuário.
 - `saldos_contas` (saldo atual por conta) e `resumo_periodo(inicio, fim)` (saldo anterior, entradas, saídas e pendências).
 - Contas e categorias padrão são criadas automaticamente para cada novo usuário.
+- `convites` (migração `convites`): sem acesso direto pelo site; só pelas funções `criar_convite`, `listar_convites`, `cancelar_convite` e `sou_administrador`, que conferem o administrador.
 
 ## Próximas etapas
 
