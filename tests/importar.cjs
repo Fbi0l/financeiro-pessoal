@@ -76,6 +76,21 @@ const ids4 = I.idsExternos(e4.movimentos);
 assert.ok(ids4[1].startsWith('h:2026-11-05:-800:') && ids4[2] === ids4[1] + '#2', 'dois cafes iguais no mesmo dia viram dois lancamentos');
 assert.deepEqual(I.idsExternos(I.lerExtrato(I.decodificar(bytes1252(generico))).movimentos), ids4, 'mesmo arquivo gera os mesmos identificadores');
 
+// ---------- CSV do PicPay: "origem / destino", tipo da operacao, hora e sinal unicode "−R$" ----------
+const picpay = 'data,hora,tipo,"origem / destino",valor,"forma de pagamento"\n' +
+  '2026-10-19,22:57,"Compra realizada","PicPay Shop","−R$ 25,00","Com saldo"\n' +
+  '2026-10-19,22:54,"Pix recebido","Fulano de Tal","+R$ 25,00",\n' +
+  '2026-10-20,08:00,"Pix enviado","Padaria","−R$ 1.234,50","Com saldo"\n' +
+  '2026-10-20,08:00,"Pix enviado","Padaria","−R$ 1.234,50","Com saldo"\n';
+const ePP = I.lerExtrato(picpay);
+assert.equal(ePP.formato, 'CSV do PicPay');
+assert.deepEqual(ePP.movimentos.map(m => [m.data, m.valor, m.descricao]), [
+  ['2026-10-19', -25, 'Compra realizada - PicPay Shop'], ['2026-10-19', 25, 'Pix recebido - Fulano de Tal'],
+  ['2026-10-20', -1234.5, 'Pix enviado - Padaria'], ['2026-10-20', -1234.5, 'Pix enviado - Padaria']]);
+const idsPP = I.idsExternos(ePP.movimentos);
+assert.equal(new Set(idsPP).size, 4, 'iguais no mesmo minuto nao se perdem');
+assert.deepEqual(I.idsExternos(I.lerExtrato('﻿' + picpay).movimentos), idsPP, 'mesmo arquivo do PicPay gera os mesmos identificadores');
+
 // ---------- CSV do Banco do Brasil (formato atual): Detalhes, tipo e documento repetido ----------
 const bb = `"Data","Lançamento","Detalhes","N° documento","Valor","Tipo Lançamento"
 "01/10/2026","Saldo Anterior","","","1.500,00",""
@@ -168,4 +183,4 @@ assert.deepEqual(I.dadosDaImportacao(previa, { formato: 'OFX' }, '  extrato   ou
   { conta_id: 'conta-1', arquivo: 'extrato outubro.ofx', formato: 'OFX', periodo_inicio: regs.map(r => r.data).sort()[0], periodo_fim: regs.map(r => r.data).sort().pop() });
 assert.equal(I.dadosDaImportacao(previa, null, 'x'.repeat(300), 'c').arquivo.length, 120);
 assert.equal(I.dadosDaImportacao(previa.map(l => ({ ...l, incluir: false })), null, 'a.ofx', 'c'), null, 'nada marcado, nada a registrar');
-console.log('Importacao aprovada: OFX 1 e 2, CSV Nubank, Banco do Brasil e generico, acentos, saldo descartado, identificadores, categorias, previa e registro da importacao.');
+console.log('Importacao aprovada: OFX 1 e 2, CSV Nubank, Banco do Brasil, PicPay e generico, acentos, saldo descartado, identificadores, categorias, previa e registro da importacao.');

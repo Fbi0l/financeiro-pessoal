@@ -118,7 +118,8 @@ const Importar = (() => {
   const NOMES = {
     data: /^(data|date|dt|data (do )?lancamento|data mov(imento)?)$/,
     valor: /^(valor|amount|value|quantia|valor \(r\$\)|valor r\$)$/,
-    descricao: /^(descricao|historico|lancamento|title|titulo|memo|detalhe|detalhes|descricao do lancamento|estabelecimento)$/,
+    descricao: /^(descricao|historico|lancamento|title|titulo|memo|detalhe|detalhes|descricao do lancamento|estabelecimento|origem ?\/ ?destino)$/,
+    hora: /^(hora|horario)$/,
     credito: /^(credito|entrada|entradas|credito \(r\$\))$/,
     debito: /^(debito|saida|saidas|debito \(r\$\))$/,
     id: /^(identificador|id|fitid|codigo|documento|n. documento|numero do documento)$/,
@@ -151,6 +152,8 @@ const Importar = (() => {
     const bancoDoBrasil = (/(^|\|)lancamento\|detalhes(\||$)/.test(titulos) && /tipo lancamento/.test(titulos)) || /dependencia origem/.test(titulos);
     // Fatura do cartão Nubank: "date,title,amount" (compras positivas).
     const cartaoNubank = titulos === 'date|title|amount';
+    // PicPay: "data,hora,tipo,origem / destino,valor,forma de pagamento" (valor com sinal, ex.: "−R$ 25,00").
+    const picpay = /origem ?\/ ?destino/.test(titulos) && /forma de pagamento/.test(titulos);
     const movimentos = [];
     for (const l of linhas.slice(cab + 1)) {
       const data = lerData(l[col.data]);
@@ -168,6 +171,11 @@ const Importar = (() => {
         else if (/^(entrada|credito|c)$/.test(tipo)) valor = Math.abs(valor);
       }
       let descricao = limparEspacos(l[col.descricao]);
+      if (picpay && col.tipo !== undefined) {
+        // "Compra realizada" + "PicPay Shop" -> "Compra realizada - PicPay Shop"
+        const op = limparEspacos(l[col.tipo]);
+        if (op && !semAcento(descricao).includes(semAcento(op))) descricao = descricao ? `${op} - ${descricao}` : op;
+      }
       if (usaComplemento) {
         // "03/10 14:22 Fulano de Tal" -> "Fulano de Tal" (a data já está na coluna própria).
         const comp = limparEspacos(l[col.complemento]).replace(/^\d{2}\/\d{2}(\/\d{2,4})?(\s+\d{2}:\d{2}(:\d{2})?)?\s*/, '');
@@ -175,11 +183,14 @@ const Importar = (() => {
       }
       // Número de documento não é único: só identifica junto com a data e o valor.
       const doc = col.id !== undefined ? String(l[col.id] || '').trim() : '';
-      const fitid = !doc ? '' : idUnico ? doc : (/^0*$/.test(doc) || valor == null ? '' : `doc:${data}:${Math.round(valor * 100)}:${doc}`);
+      let fitid = !doc ? '' : idUnico ? doc : (/^0*$/.test(doc) || valor == null ? '' : `doc:${data}:${Math.round(valor * 100)}:${doc}`);
+      // PicPay não tem identificador: data, hora e valor identificam (repetidos no mesmo minuto ganham #2 em idsExternos).
+      const hora = col.hora !== undefined ? String(l[col.hora] || '').trim() : '';
+      if (picpay && !fitid && valor != null && /^\d{1,2}:\d{2}(:\d{2})?$/.test(hora)) fitid = `pp:${data}T${hora}:${Math.round(valor * 100)}`;
       movimentos.push({ data, valor, descricao: limparDescricao(descricao), fitid });
     }
     const nubankConta = /^data\|valor\|identificador\|descricao$/.test(titulos);
-    return { formato: nubankConta ? 'CSV do Nubank' : cartaoNubank ? 'CSV do cartão Nubank' : bancoDoBrasil ? 'CSV do Banco do Brasil' : 'CSV', tipoExtrato: cartaoNubank ? 'cartao' : 'conta', banco: '', conta: '', saldoFinal: null, movimentos };
+    return { formato: nubankConta ? 'CSV do Nubank' : cartaoNubank ? 'CSV do cartão Nubank' : bancoDoBrasil ? 'CSV do Banco do Brasil' : picpay ? 'CSV do PicPay' : 'CSV', tipoExtrato: cartaoNubank ? 'cartao' : 'conta', banco: '', conta: '', saldoFinal: null, movimentos };
   }
 
   /** Lê um extrato (OFX ou CSV) e devolve os movimentos já limpos, sem linhas de saldo e sem valor zero. */

@@ -2,6 +2,10 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.8.3 — Extrato do PicPay
+
+O importador passa a ler o CSV do PicPay (data, hora, tipo, origem / destino, valor e forma de pagamento). A descrição junta o tipo e a origem ou destino ("Compra realizada - PicPay Shop"), e data, hora e valor identificam cada movimento para não duplicar ao importar de novo.
+
 ## Versão 0.8.2 — Nome do convite em janela própria
 
 No iPhone com o app instalado, o teclado não abria no campo "Para quem?" do painel. O botão "Gerar link de convite" agora abre uma janela com esse campo, igual às de nova categoria e novo lançamento.
