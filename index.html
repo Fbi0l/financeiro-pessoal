@@ -10,9 +10,9 @@
   <meta name="theme-color" content="#1e2547">
   <title>Financeiro | Meu dinheiro</title>
   <link rel="icon" href="assets/icone.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=0.1.0">
+  <link rel="stylesheet" href="styles.css?v=0.2.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-  <script src="app.js?v=0.1.0" defer></script>
+  <script src="app.js?v=0.2.0" defer></script>
 </head>
 <body>
   <div id="bootView" class="boot" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Carregando…</span></div>
@@ -28,7 +28,7 @@
       <p id="loginMessage" class="message" role="alert" aria-live="assertive"></p>
       <small>Acesso restrito ao titular. Não há cadastro aberto.</small>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.1.0</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.2.0</footer>
   </div>
 
   <div id="appView" class="app hidden">
@@ -49,7 +49,10 @@
     <main class="main">
       <header class="topbar">
         <div><p id="pageEyebrow" class="eyebrow"></p><h1 id="pageTitle">Início</h1></div>
-        <button id="refreshBtn" class="secondary" type="button" aria-label="Atualizar dados">↻ <span class="hide-sm">Atualizar</span></button>
+        <div class="topbar-actions">
+          <button id="refreshBtn" class="secondary" type="button" aria-label="Atualizar dados">↻ <span class="hide-sm">Atualizar</span></button>
+          <button id="novoBtn" class="primary" type="button"><span aria-hidden="true">+</span> Novo<span class="hide-sm"> lançamento</span></button>
+        </div>
       </header>
       <p id="globalMessage" class="message" role="status" aria-live="polite"></p>
 
@@ -59,6 +62,11 @@
           <strong id="saldoTotal" class="hero-value">—</strong>
           <span id="saldoResumo" class="hero-sub"></span>
         </div>
+        <div class="stats" aria-label="Resumo do mês atual">
+          <div class="stat"><span>Entradas do mês</span><strong id="mesEntradas" class="money pos">—</strong></div>
+          <div class="stat"><span>Saídas do mês</span><strong id="mesSaidas" class="money neg">—</strong></div>
+          <div class="stat"><span>Resultado do mês</span><strong id="mesResultado" class="money">—</strong><small id="mesPendente"></small></div>
+        </div>
         <div class="panel">
           <div class="panel-head"><h2>Saldo por conta</h2></div>
           <ul id="contasResumo" class="list"></ul>
@@ -66,10 +74,28 @@
       </section>
 
       <section id="lancamentosPage" class="page hidden">
-        <div class="panel empty-state">
-          <span class="empty-ico" aria-hidden="true">⇅</span>
-          <h2>Lançamentos chegam na próxima etapa</h2>
-          <p class="muted">Aqui você vai registrar, editar e apagar entradas, saídas e transferências, com a lista do mês.</p>
+        <div class="toolbar">
+          <div class="month-nav" role="group" aria-label="Mês">
+            <button id="mesAnterior" class="secondary icon-btn" type="button" aria-label="Mês anterior">‹</button>
+            <strong id="mesRotulo" class="month-label" aria-live="polite"></strong>
+            <button id="mesSeguinte" class="secondary icon-btn" type="button" aria-label="Próximo mês">›</button>
+          </div>
+          <div class="filters">
+            <label class="sr-only" for="filtroConta">Conta</label>
+            <select id="filtroConta"><option value="">Todas as contas</option></select>
+            <label class="sr-only" for="filtroCategoria">Categoria</label>
+            <select id="filtroCategoria"><option value="">Todas as categorias</option></select>
+            <label class="sr-only" for="filtroBusca">Buscar</label>
+            <input id="filtroBusca" type="search" placeholder="Buscar descrição" maxlength="60" autocomplete="off">
+          </div>
+        </div>
+        <div class="stats stats-sm">
+          <div class="stat"><span>Entradas</span><strong id="listaEntradas" class="money pos">—</strong></div>
+          <div class="stat"><span>Saídas</span><strong id="listaSaidas" class="money neg">—</strong></div>
+          <div class="stat"><span>Resultado</span><strong id="listaResultado" class="money">—</strong></div>
+        </div>
+        <div class="panel panel-flush">
+          <div id="listaLancamentos" class="tx-list" aria-live="polite"></div>
         </div>
       </section>
 
@@ -85,5 +111,45 @@
       </section>
     </main>
   </div>
+
+  <dialog id="txDialog" class="dialog" aria-labelledby="txTitulo">
+    <form id="txForm" class="dialog-form" novalidate>
+      <div class="dialog-head"><h2 id="txTitulo">Novo lançamento</h2><button id="txFechar" class="ghost icon-btn" type="button" aria-label="Fechar">✕</button></div>
+      <div class="segmented" role="radiogroup" aria-label="Tipo de lançamento">
+        <label><input type="radio" name="tipo" value="despesa" checked><span>Saída</span></label>
+        <label><input type="radio" name="tipo" value="receita"><span>Entrada</span></label>
+        <label><input type="radio" name="tipo" value="transferencia"><span>Transferência</span></label>
+      </div>
+      <label>Valor (R$) *<input id="txValor" inputmode="decimal" autocomplete="off" placeholder="0,00" maxlength="16" required></label>
+      <label>Descrição *<input id="txDescricao" maxlength="120" autocomplete="off" required placeholder="Ex.: Mercado do mês"></label>
+      <div class="form-row">
+        <label>Data *<input id="txData" type="date" required></label>
+        <label id="txContaRotulo">Conta *<select id="txConta" required></select></label>
+      </div>
+      <label id="txDestinoCampo" class="hidden">Para a conta *<select id="txDestino"></select></label>
+      <label id="txCategoriaCampo">Categoria *<select id="txCategoria"></select></label>
+      <label class="check"><input id="txPago" type="checkbox" checked><span id="txPagoTexto">Já foi pago</span></label>
+      <label>Observações<textarea id="txObs" rows="2" maxlength="1000"></textarea></label>
+      <p id="txMensagem" class="message" role="alert"></p>
+      <div class="dialog-actions">
+        <button id="txExcluir" class="danger-ghost hidden" type="button">Excluir</button>
+        <span class="spacer"></span>
+        <button id="txCancelar" class="secondary" type="button">Cancelar</button>
+        <button id="txSalvar" class="primary" type="submit">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirmDialog" class="dialog dialog-sm" aria-labelledby="confirmTitulo">
+    <div class="dialog-form">
+      <h2 id="confirmTitulo">Excluir lançamento?</h2>
+      <p id="confirmTexto" class="muted"></p>
+      <div class="dialog-actions">
+        <span class="spacer"></span>
+        <button id="confirmNao" class="secondary" type="button">Cancelar</button>
+        <button id="confirmSim" class="danger" type="button">Excluir</button>
+      </div>
+    </div>
+  </dialog>
 </body>
 </html>
