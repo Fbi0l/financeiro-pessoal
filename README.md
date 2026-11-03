@@ -2,6 +2,10 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.8.2 — Nome do convite em janela própria
+
+No iPhone com o app instalado, o teclado não abria no campo "Para quem?" do painel. O botão "Gerar link de convite" agora abre uma janela com esse campo, igual às de nova categoria e novo lançamento.
+
 ## Versão 0.8.1 — Campo do convite no iPhone
 
 O campo "Para quem?" do painel de convites voltou a aceitar digitação no iPhone (app instalado). Ele usava letra de 15px, o que fazia o iPhone dar zoom ao tocar; agora usa 16px como os demais campos, e os filtros e o link do convite também passam a 16px no celular.

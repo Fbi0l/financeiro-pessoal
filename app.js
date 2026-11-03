@@ -1064,14 +1064,15 @@ function iniciar() {
   async function gerarConvite(ev) {
     ev.preventDefault();
     $('conviteGerar').disabled = true;
-    aviso('convitesMensagem', 'Gerando…', true);
+    aviso('conviteDlgMensagem', 'Gerando…', true);
     const { data, error } = await db.rpc('criar_convite', { p_rotulo: $('conviteRotulo').value.trim() || null });
     $('conviteGerar').disabled = false;
     if (error || !data?.[0]?.codigo) {
       const m = String(error?.message || '');
-      aviso('convitesMensagem', /pendentes|caracteres|administrador/.test(m) ? m : mensagemErroBanco(error));
+      aviso('conviteDlgMensagem', /pendentes|caracteres|administrador/.test(m) ? m : mensagemErroBanco(error));
       return;
     }
+    $('conviteDialog').close();
     $('conviteLink').value = linkConvite(location.origin + location.pathname, data[0].codigo);
     $('conviteGerado').classList.remove('hidden');
     $('conviteCompartilhar').classList.toggle('hidden', !navigator.share);
@@ -1152,7 +1153,7 @@ function iniciar() {
   function sairDoApp() {
     if ($('txDialog').open) $('txDialog').close();
     if ($('confirmDialog').open) $('confirmDialog').close();
-    ['contaDialog', 'catDialog'].forEach(id => { if ($(id).open) $(id).close(); });
+    ['contaDialog', 'catDialog', 'conviteDialog'].forEach(id => { if ($(id).open) $(id).close(); });
     Object.assign(estado, { contas: [], categorias: [], lancamentos: [], editando: null, excluindo: null });
     limparImportacao();
     limparConversa();
@@ -1227,6 +1228,13 @@ function iniciar() {
   $('conviteForm').addEventListener('submit', concluirConvite);
   $('conviteIrLogin').addEventListener('click', () => { if ($('conviteIrLogin').onclick) return; conviteAtivo.ligado = false; history.replaceState(null, '', location.pathname); mostrar('loginView'); });
   $('conviteNovoForm').addEventListener('submit', gerarConvite);
+  $('conviteNovo').addEventListener('click', () => {
+    $('conviteRotulo').value = '';
+    aviso('conviteDlgMensagem', '');
+    $('conviteDialog').showModal();
+    $('conviteRotulo').focus();
+  });
+  ['conviteFechar', 'conviteCancelar'].forEach(id => $(id).addEventListener('click', () => $('conviteDialog').close()));
   $('conviteCopiar').addEventListener('click', copiarConvite);
   $('conviteCompartilhar').addEventListener('click', () => navigator.share?.({ title: 'Convite para o Financeiro', text: 'Crie seu acesso ao Financeiro por este link (vale por 48 horas):', url: $('conviteLink').value }).catch(() => {}));
 

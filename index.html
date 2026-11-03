@@ -18,10 +18,10 @@
   <meta name="apple-mobile-web-app-title" content="Financeiro">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="application-name" content="Financeiro">
-  <link rel="stylesheet" href="styles.css?v=0.8.1">
+  <link rel="stylesheet" href="styles.css?v=0.8.2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-  <script src="importar.js?v=0.8.1" defer></script>
-  <script src="app.js?v=0.8.1" defer></script>
+  <script src="importar.js?v=0.8.2" defer></script>
+  <script src="app.js?v=0.8.2" defer></script>
 </head>
 <body>
   <div id="bootView" class="boot" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Carregando…</span></div>
@@ -37,7 +37,7 @@
       <p id="loginMessage" class="message" role="alert" aria-live="assertive"></p>
       <small>Acesso restrito ao titular. Não há cadastro aberto.</small>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.8.1</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.8.2</footer>
   </div>
 
   <div id="conviteView" class="login-wrap hidden">
@@ -55,7 +55,7 @@
       <p id="conviteMensagem" class="message" role="alert" aria-live="assertive"></p>
       <button id="conviteIrLogin" class="secondary full hidden" type="button">Ir para o login</button>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.8.1</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.8.2</footer>
   </div>
 
   <div id="appView" class="app hidden">
@@ -70,7 +70,7 @@
       </nav>
       <div class="sidebar-bottom">
         <span id="userEmail" class="user-email"></span>
-        <small class="versao-app">Versão 0.8.1</small>
+        <small class="versao-app">Versão 0.8.2</small>
         <button id="logoutBtn" class="nav-item" type="button" aria-label="Sair" title="Sair"><span class="nav-ico" aria-hidden="true">↪</span><span>Sair</span></button>
       </div>
     </aside>
@@ -108,11 +108,7 @@
         </div>
         <div id="convitesPainel" class="panel hidden">
           <div class="panel-head"><div><h2>Convidar pessoas</h2><p class="muted panel-sub">Só você vê esta área. Quem entrar pelo convite terá finanças próprias e separadas: não vê nada seu.</p></div></div>
-          <form id="conviteNovoForm" class="convite-novo">
-            <label class="sr-only" for="conviteRotulo">Para quem é o convite (opcional)</label>
-            <input id="conviteRotulo" maxlength="40" placeholder="Para quem? (opcional, ex.: Ana)" autocomplete="off">
-            <button id="conviteGerar" class="primary" type="submit">Gerar link de convite</button>
-          </form>
+          <div class="convite-novo"><button id="conviteNovo" class="primary" type="button">Gerar link de convite</button></div>
           <div id="conviteGerado" class="convite-gerado hidden" role="status">
             <p><strong>Link criado.</strong> Copie e envie agora: por segurança, ele não aparece de novo. Vale por 48 horas e funciona uma única vez.</p>
             <div class="convite-link"><input id="conviteLink" readonly aria-label="Link do convite"><button id="conviteCopiar" class="secondary" type="button">Copiar</button><button id="conviteCompartilhar" class="secondary hidden" type="button">Compartilhar</button></div>
@@ -249,7 +245,7 @@
         <details id="catArquivadasBox" class="panel arquivadas hidden"><summary>Categorias arquivadas <span id="catArqQtd" class="badge"></span></summary><ul id="catArquivadas" class="chips"></ul></details>
         <p class="muted ag-aviso">Toque numa categoria para renomear, trocar a cor, arquivar ou excluir.</p>
       </section>
-      <footer class="app-footer">© 2026 Fbiol · Versão 0.8.1</footer>
+      <footer class="app-footer">© 2026 Fbiol · Versão 0.8.2</footer>
     </main>
   </div>
 
@@ -321,6 +317,19 @@
         <span class="spacer"></span>
         <button id="catCancelar" class="secondary" type="button">Cancelar</button>
         <button id="catSalvar" class="primary" type="submit">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="conviteDialog" class="dialog dialog-sm" aria-labelledby="conviteDlgTitulo">
+    <form id="conviteNovoForm" class="dialog-form" novalidate>
+      <div class="dialog-head"><h2 id="conviteDlgTitulo">Novo convite</h2><button id="conviteFechar" class="ghost icon-btn" type="button" aria-label="Fechar">✕</button></div>
+      <label>Para quem? (opcional)<input id="conviteRotulo" type="text" maxlength="40" autocomplete="off" placeholder="Ex.: Ana"></label>
+      <p id="conviteDlgMensagem" class="message" role="alert"></p>
+      <div class="dialog-actions">
+        <span class="spacer"></span>
+        <button id="conviteCancelar" class="secondary" type="button">Cancelar</button>
+        <button id="conviteGerar" class="primary" type="submit">Gerar link</button>
       </div>
     </form>
   </dialog>
