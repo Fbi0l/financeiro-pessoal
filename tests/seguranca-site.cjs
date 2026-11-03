@@ -17,7 +17,11 @@ assert.ok(!/<script(?![^>]*\ssrc=)[^>]*>/.test(html), 'script inline');
 assert.ok(!/\son[a-z]+=/i.test(html), 'atributo on* inline');
 assert.ok(!/\sstyle=/i.test(html), 'atributo style inline');
 assert.ok(!/<style/i.test(html), 'bloco <style> inline');
-assert.ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write/.test(app), 'app.js monta HTML a partir de texto (risco de XSS)');
+for (const arquivo of ['app.js', 'importar.js'])
+  assert.ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\(|new Function/.test(fs.readFileSync(arquivo, 'utf8')), `${arquivo} monta HTML ou codigo a partir de texto (risco de XSS)`);
+// Todo script do proprio site carregado pela pagina existe e e verificado aqui.
+const locais = [...html.matchAll(/<script\s[^>]*src="([^":]+?)(\?[^"]*)?"/g)].map(m => m[1]);
+assert.deepEqual(locais.sort(), ['app.js', 'importar.js']);
 
 // Politica CSP.
 const csp = (html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/) || [])[1];
@@ -37,7 +41,7 @@ assert.deepEqual(diretiva('connect-src'), ["'self'", `https://${host}`, `wss://$
 
 // Somente chave publicavel: nunca service_role nem chave secreta.
 assert.match(app, /SUPABASE_KEY = 'sb_publishable_[A-Za-z0-9_-]+'/, 'chave publicavel');
-for (const arquivo of ['index.html', 'app.js', 'styles.css']) {
+for (const arquivo of ['index.html', 'app.js', 'importar.js', 'styles.css']) {
   const t = fs.readFileSync(arquivo, 'utf8');
   assert.ok(!/sb_secret_|service_role/.test(t), `${arquivo}: possivel chave secreta`);
 }

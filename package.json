@@ -1,9 +1,9 @@
 {
   "name": "financeiro-pessoal",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "private": true,
   "description": "Testes automatizados do app financeiro. Nao usa credenciais do Supabase.",
   "scripts": {
-    "test": "node --check app.js && node tests/logica.cjs && node tests/lancamentos.cjs && node tests/seguranca-site.cjs"
+    "test": "node --check app.js && node --check importar.js && node tests/logica.cjs && node tests/lancamentos.cjs && node tests/importar.cjs && node tests/seguranca-site.cjs"
   }
 }

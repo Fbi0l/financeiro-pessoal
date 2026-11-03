@@ -2,6 +2,15 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.3.0 — Importação de extrato
+
+- **Lançamentos → Importar extrato:** escolha a conta e o arquivo **OFX** ou **CSV** (Nubank ou genérico, com `;` ou `,`, colunas de valor ou de crédito/débito). O arquivo é lido no próprio aparelho.
+- **Prévia antes de gravar:** cada movimento com data, valor e categoria sugerida, que você pode trocar ou desmarcar.
+- **Categoria sugerida** pelo seu histórico (o mesmo estabelecimento já categorizado antes) ou por palavras-chave (Uber, iFood, farmácias, supermercados de Belém, assinaturas…). O que não for reconhecido vai para "Outras".
+- **Nada duplica:** cada movimento guarda o identificador do banco (ou data+valor+descrição). Reimportar o mesmo arquivo, ou um período que se sobrepõe, só traz o que é novo. Movimentos com a mesma data e valor de um lançamento feito à mão vêm desmarcados.
+- Linhas de saldo são ignoradas; acentos de arquivos em Windows-1252 são lidos corretamente.
+- Fatura de cartão de crédito é reconhecida e recusada por enquanto (terá tratamento próprio na próxima etapa).
+
 ## Versão 0.2.2 — Trava de categoria no banco
 
 - O banco recusa uma saída com categoria de entrada (e vice-versa), com mensagem clara no app. Protege a futura importação de extratos.
@@ -59,6 +68,6 @@ O esquema foi criado pelas migrações `fase1_base_financeira` e `cor_especie_ne
 
 ## Próximas etapas
 
-1. Importação de extrato (CSV ou OFX).
-2. Cartão de crédito, se usar.
+1. Cartão de crédito, se usar.
+2. Edição de contas (saldo inicial) e categorias.
 3. Análise do mês, limites por categoria e instalação no celular (PWA).

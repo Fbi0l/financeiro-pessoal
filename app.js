@@ -174,6 +174,7 @@ function iniciar() {
   const PAGINAS = {
     inicio: { titulo: 'Início', eyebrow: 'VISÃO GERAL' },
     lancamentos: { titulo: 'Lançamentos', eyebrow: 'ENTRADAS E SAÍDAS' },
+    importar: { titulo: 'Importar extrato', eyebrow: 'LANÇAMENTOS', menu: 'lancamentos' },
     contas: { titulo: 'Contas', eyebrow: 'ONDE ESTÁ O DINHEIRO' },
     categorias: { titulo: 'Categorias', eyebrow: 'ORGANIZAÇÃO' }
   };
@@ -198,8 +199,9 @@ function iniciar() {
 
   function irPara(pagina) {
     if (!PAGINAS[pagina]) pagina = 'inicio';
+    const noMenu = PAGINAS[pagina].menu || pagina;
     document.querySelectorAll('.nav-item[data-page]').forEach(b => {
-      const ativo = b.dataset.page === pagina;
+      const ativo = b.dataset.page === noMenu;
       b.classList.toggle('active', ativo);
       if (ativo) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
@@ -466,6 +468,167 @@ function iniciar() {
     carregarLancamentos().catch(e => { console.error(e); aviso('globalMessage', 'Não foi possível carregar os lançamentos.'); });
   }
 
+  /* ----- Importação de extrato ----- */
+  const imp = { linhas: [], extrato: null, contaId: '', arquivo: null, gravando: false, leitura: 0 };
+  const TAMANHO_MAXIMO = 5 * 1024 * 1024;
+  const formatarData = iso => iso.split('-').reverse().join('/');
+
+  function abrirImportar() {
+    const contas = estado.contas.filter(c => !c.arquivada);
+    const atual = $('impConta').value || $('filtroConta').value;
+    $('impConta').replaceChildren(opcao('', 'Escolha a conta…'), ...contas.map(c => opcao(c.id, c.nome)));
+    $('impConta').value = contas.some(c => c.id === atual) ? atual : '';
+    irPara('importar');
+  }
+  function limparImportacao() {
+    Object.assign(imp, { linhas: [], extrato: null, contaId: '', arquivo: null });
+    imp.leitura++;
+    $('impArquivo').value = '';
+    $('impArquivoNome').textContent = 'Escolher arquivo OFX ou CSV';
+    $('impPrevia').classList.add('hidden');
+    $('impLista').replaceChildren();
+    aviso('impMensagem', '');
+  }
+
+  async function lerArquivo(arquivo) {
+    const leitura = ++imp.leitura;
+    $('impPrevia').classList.add('hidden');
+    if (!arquivo) return;
+    imp.arquivo = arquivo;
+    $('impArquivoNome').textContent = arquivo.name;
+    const contaId = $('impConta').value;
+    if (!contaId) { aviso('impMensagem', 'Agora escolha a conta deste extrato.'); return; }
+    if (arquivo.size > TAMANHO_MAXIMO) { aviso('impMensagem', 'Arquivo grande demais (máximo 5 MB). Exporte um período menor.'); return; }
+    aviso('impMensagem', 'Lendo o arquivo…', true);
+    try {
+      const texto = Importar.decodificar(new Uint8Array(await arquivo.arrayBuffer()));
+      const extrato = Importar.lerExtrato(texto, arquivo.name);
+      if (extrato.tipoExtrato === 'cartao') {
+        aviso('impMensagem', 'Este arquivo parece ser uma fatura de cartão de crédito. O cartão terá tratamento próprio na próxima etapa, para não contar as compras em dobro com o pagamento da fatura. Por enquanto, importe o extrato da conta.');
+        return;
+      }
+      if (!extrato.movimentos.length) { aviso('impMensagem', 'Não encontrei movimentos neste arquivo.'); return; }
+      const datas = extrato.movimentos.map(m => m.data).sort();
+      // O que já existe nesta conta no período (para não duplicar) e o histórico (para sugerir categorias).
+      const [existR, histR] = await Promise.all([
+        db.from('lancamentos').select('data,tipo,valor,id_externo').eq('conta_id', contaId)
+          .gte('data', datas[0]).lte('data', datas[datas.length - 1]).limit(10000),
+        db.from('lancamentos').select('descricao,tipo,categoria_id').not('categoria_id', 'is', null)
+          .order('data', { ascending: false }).limit(1500)
+      ]);
+      if (existR.error) throw existR.error;
+      if (histR.error) throw histR.error;
+      if (leitura !== imp.leitura) return; // outro arquivo foi escolhido enquanto este carregava
+      imp.extrato = extrato;
+      imp.contaId = contaId;
+      imp.linhas = Importar.prepararPrevia(extrato, {
+        categorias: estado.categorias,
+        historico: Importar.montarHistorico(histR.data),
+        idsExistentes: new Set(existR.data.map(l => l.id_externo).filter(Boolean)),
+        existentes: existR.data
+      });
+      aviso('impMensagem', '');
+      desenharPrevia();
+      $('impPrevia').classList.remove('hidden');
+      $('impPrevia').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (e) {
+      if (leitura !== imp.leitura) return;
+      if (!e.codigo) console.error(e); // erros com código são esperados e explicados na tela
+      aviso('impMensagem', e.codigo ? e.message : (e.message && /fetch|network/i.test(e.message) ? mensagemErroBanco(e) : 'Não consegui ler este arquivo. Confira se é um extrato em OFX ou CSV.'));
+    }
+  }
+
+  const ROTULO_SITUACAO = { importada: 'já importado', parecida: 'parece já lançado à mão' };
+  function linhaPrevia(l, i) {
+    const item = el('div', 'imp-row' + (l.incluir ? '' : ' off'));
+    const marca = document.createElement('input');
+    marca.type = 'checkbox'; marca.checked = l.incluir;
+    marca.setAttribute('aria-label', `Importar ${l.descricao}, ${formatarMoeda(l.valor)}`);
+    marca.addEventListener('change', () => { l.incluir = marca.checked; item.classList.toggle('off', !l.incluir); desenharResumo(); });
+    const info = el('div', 'imp-info');
+    const topo = el('div', 'imp-top');
+    topo.append(el('strong', null, l.descricao));
+    const valor = el('span', 'money ' + (l.tipo === 'receita' ? 'pos' : 'neg'), (l.tipo === 'receita' ? '+' : '−') + formatarMoeda(l.valor));
+    topo.append(valor);
+    const baixo = el('div', 'imp-bottom');
+    baixo.append(el('small', null, formatarData(l.data)));
+    if (ROTULO_SITUACAO[l.situacao]) baixo.append(el('span', 'tag', ROTULO_SITUACAO[l.situacao]));
+    const sel = document.createElement('select');
+    sel.className = 'imp-cat' + (l.motivo === 'padrao' ? ' sem-sugestao' : '');
+    sel.setAttribute('aria-label', `Categoria de ${l.descricao}`);
+    sel.append(opcao('', 'Sem categoria'), ...estado.categorias.filter(c => c.tipo === l.tipo).map(c => opcao(c.id, c.nome)));
+    sel.value = l.categoria_id || '';
+    sel.addEventListener('change', () => { l.categoria_id = sel.value; sel.classList.remove('sem-sugestao'); });
+    baixo.append(sel);
+    info.append(topo, baixo);
+    item.append(marca, info);
+    item.dataset.i = String(i);
+    return item;
+  }
+  function desenharResumo() {
+    const r = Importar.resumoPrevia(imp.linhas);
+    $('impResumo').textContent = r.incluidas === 1 ? '1 lançamento marcado' : `${r.incluidas} lançamentos marcados`;
+    $('impResumoValores').textContent = `Entradas ${formatarMoeda(r.entradas)} · Saídas ${formatarMoeda(r.saidas)}`;
+    $('impConfirmar').disabled = r.incluidas === 0 || imp.gravando;
+    $('impConfirmar').textContent = r.incluidas ? `Importar ${r.incluidas}` : 'Importar';
+  }
+  function desenharPrevia() {
+    const r = Importar.resumoPrevia(imp.linhas);
+    const conta = contaPorId(imp.contaId)?.nome || 'conta';
+    $('impInfo').textContent = `${imp.extrato.formato} · ${formatarData(r.inicio)} a ${formatarData(r.fim)} · ${r.total} movimentos para ${conta}.`;
+    const avisos = [];
+    if (r.importadas) avisos.push(`${r.importadas} já ${r.importadas === 1 ? 'foi importado' : 'foram importados'} antes e ${r.importadas === 1 ? 'ficou desmarcado' : 'ficaram desmarcados'}.`);
+    if (r.parecidas) avisos.push(`${r.parecidas} ${r.parecidas === 1 ? 'tem' : 'têm'} a mesma data e valor de um lançamento que você fez à mão. Desmarquei para não contar em dobro; marque se for outro gasto.`);
+    const semCat = imp.linhas.filter(l => l.motivo === 'padrao').length;
+    if (semCat) avisos.push(`${semCat} sem categoria reconhecida ${semCat === 1 ? 'foi' : 'foram'} para "Outras". Ajuste se quiser; o app aprende para as próximas importações.`);
+    const desc = imp.extrato.descartados;
+    if (desc.saldo) avisos.push(`${desc.saldo} ${desc.saldo === 1 ? 'linha de saldo foi ignorada' : 'linhas de saldo foram ignoradas'}.`);
+    $('impAvisos').replaceChildren(...avisos.map(t => el('p', 'note', t)));
+    $('impLista').replaceChildren(...imp.linhas.map(linhaPrevia));
+    desenharResumo();
+  }
+  function marcarTodas(valor) {
+    imp.linhas.forEach(l => { l.incluir = valor ? l.situacao === 'nova' : false; });
+    desenharPrevia();
+  }
+
+  async function confirmarImportacao() {
+    const registros = Importar.registrosParaGravar(imp.linhas, imp.contaId);
+    if (!registros.length || imp.gravando) return;
+    imp.gravando = true;
+    $('impConfirmar').disabled = true;
+    $('impCancelar').disabled = true;
+    let gravados = 0;
+    try {
+      // Em lotes; se o mesmo movimento já existir (outra aba, outro aparelho), o banco ignora em vez de duplicar.
+      for (let i = 0; i < registros.length; i += 400) {
+        const lote = registros.slice(i, i + 400);
+        aviso('impMensagem', `Importando… ${Math.min(i + lote.length, registros.length)} de ${registros.length}`, true);
+        const { data, error } = await db.from('lancamentos')
+          .upsert(lote, { onConflict: 'usuario_id,conta_id,id_externo', ignoreDuplicates: true })
+          .select('id');
+        if (error) throw error;
+        gravados += data.length;
+      }
+      const ignorados = registros.length - gravados;
+      const ultima = imp.linhas.filter(l => l.incluir).map(l => l.data).sort().pop();
+      limparImportacao();
+      estado.ano = Number(ultima.slice(0, 4)); estado.mes = Number(ultima.slice(5, 7));
+      irPara('lancamentos');
+      await carregarDados();
+      aviso('globalMessage', `${gravados} ${gravados === 1 ? 'lançamento importado' : 'lançamentos importados'}` +
+        (ignorados ? ` (${ignorados} já existia${ignorados === 1 ? '' : 'm'} e não foi duplicado${ignorados === 1 ? '' : 's'}).` : '.'), true);
+    } catch (e) {
+      console.error(e);
+      aviso('impMensagem', (gravados ? `${gravados} foram gravados antes do erro. Ao tentar de novo, eles não serão duplicados. ` : '') + mensagemErroBanco(e));
+      if (gravados) await carregarDados();
+    } finally {
+      imp.gravando = false;
+      $('impCancelar').disabled = false;
+      if (imp.linhas.length) desenharResumo();
+    }
+  }
+
   /* ----- Sessão ----- */
   function entrarNoApp(session) {
     $('userEmail').textContent = session.user.email || '';
@@ -477,6 +640,7 @@ function iniciar() {
     if ($('txDialog').open) $('txDialog').close();
     if ($('confirmDialog').open) $('confirmDialog').close();
     Object.assign(estado, { contas: [], categorias: [], lancamentos: [], editando: null, excluindo: null });
+    limparImportacao();
     ['saldoTotal', 'mesEntradas', 'mesSaidas', 'mesResultado'].forEach(id => { $(id).textContent = '—'; });
     ['contasResumo', 'contasLista', 'catDespesas', 'catReceitas', 'listaLancamentos'].forEach(id => $(id).replaceChildren());
     $('password').value = '';
@@ -512,6 +676,18 @@ function iniciar() {
   ['filtroConta', 'filtroCategoria'].forEach(id => $(id).addEventListener('change', desenharLista));
   $('filtroBusca').addEventListener('input', desenharLista);
   $('txDialog').addEventListener('close', () => { estado.editando = null; });
+  $('abrirImportar').addEventListener('click', abrirImportar);
+  $('voltarLancamentos').addEventListener('click', () => { limparImportacao(); irPara('lancamentos'); });
+  $('impCancelar').addEventListener('click', () => { limparImportacao(); irPara('lancamentos'); });
+  $('impArquivo').addEventListener('change', () => lerArquivo($('impArquivo').files[0]));
+  $('impConta').addEventListener('change', () => { if (imp.arquivo) lerArquivo(imp.arquivo); });
+  $('impMarcar').addEventListener('click', () => marcarTodas(true));
+  $('impDesmarcar').addEventListener('click', () => marcarTodas(false));
+  $('impConfirmar').addEventListener('click', confirmarImportacao);
+  const zona = $('impDrop');
+  ['dragenter', 'dragover'].forEach(t => zona.addEventListener(t, ev => { ev.preventDefault(); zona.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(t => zona.addEventListener(t, () => zona.classList.remove('over')));
+  zona.addEventListener('drop', ev => { ev.preventDefault(); const f = ev.dataTransfer?.files?.[0]; if (f) lerArquivo(f); });
 
   let sessaoAtual = null;
   db.auth.onAuthStateChange((evento, session) => {
