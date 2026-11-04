@@ -37,8 +37,8 @@ A versão aparece em `index.html` (rodapés e `?v=` dos arquivos), `sw.js` (nome
 3. Site: envie para `main` e confira que o rodapé mostra a versão nova.
 Ordem: banco → funções → site, para nada quebrar no meio. Publicar em produção sempre com o OK do dono.
 
-## Pendências (03/11/2026)
+## Pendências (04/11/2026)
 
-- Ligar o backup diário (variável `BACKUP_ENABLED=true` e segredos no GitHub, ver `BACKUP.md`). Hoje não há cópia.
+- Backup diário ligado em 04/11/2026 (06h, 30 dias de cópias). A chave privada fica no computador do dono em `BackupsFinanceiro\chave-privada-backup-age.txt`; falta testar abrir um backup com ela.
 - Supabase: senha mínima de 10 caracteres; apagar a função antiga `agente-diagnostico`.
 - Próximas etapas: cartão de crédito (fatura, parcelas, pagamento sem contar em dobro) ou limites por categoria.
