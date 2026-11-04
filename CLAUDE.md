@@ -39,6 +39,6 @@ Ordem: banco → funções → site, para nada quebrar no meio. Publicar em prod
 
 ## Pendências (04/11/2026)
 
-- Backup diário ligado em 04/11/2026 (06h, 30 dias de cópias). A chave privada fica no computador do dono em `BackupsFinanceiro\chave-privada-backup-age.txt`; falta testar abrir um backup com ela.
+- Backup diário ligado em 04/11/2026 (06h, 30 dias de cópias). A chave privada fica no computador do dono em `BackupsFinanceiro\chave-privada-backup-age.txt`; restauração da criptografia testada pelo dono em 04/11/2026.
 - Supabase: senha mínima de 10 caracteres; apagar a função antiga `agente-diagnostico`.
 - Próximas etapas: cartão de crédito (fatura, parcelas, pagamento sem contar em dobro) ou limites por categoria.
