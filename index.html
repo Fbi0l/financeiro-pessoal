@@ -18,10 +18,10 @@
   <meta name="apple-mobile-web-app-title" content="Financeiro">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="application-name" content="Financeiro">
-  <link rel="stylesheet" href="styles.css?v=0.9.0">
+  <link rel="stylesheet" href="styles.css?v=0.10.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-  <script src="importar.js?v=0.9.0" defer></script>
-  <script src="app.js?v=0.9.0" defer></script>
+  <script src="importar.js?v=0.10.0" defer></script>
+  <script src="app.js?v=0.10.0" defer></script>
 </head>
 <body>
   <div id="bootView" class="boot" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Carregando…</span></div>
@@ -37,7 +37,7 @@
       <p id="loginMessage" class="message" role="alert" aria-live="assertive"></p>
       <small>Acesso restrito ao titular. Não há cadastro aberto.</small>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.9.0</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.10.0</footer>
   </div>
 
   <div id="conviteView" class="login-wrap hidden">
@@ -55,7 +55,7 @@
       <p id="conviteMensagem" class="message" role="alert" aria-live="assertive"></p>
       <button id="conviteIrLogin" class="secondary full hidden" type="button">Ir para o login</button>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.9.0</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.10.0</footer>
   </div>
 
   <div id="appView" class="app hidden">
@@ -70,7 +70,7 @@
       </nav>
       <div class="sidebar-bottom">
         <span id="userEmail" class="user-email"></span>
-        <small class="versao-app">Versão 0.9.0</small>
+        <small class="versao-app">Versão 0.10.0</small>
         <button id="logoutBtn" class="nav-item" type="button" aria-label="Sair" title="Sair"><span class="nav-ico" aria-hidden="true">↪</span><span>Sair</span></button>
       </div>
     </aside>
@@ -79,6 +79,7 @@
       <header class="topbar">
         <div><p id="pageEyebrow" class="eyebrow"></p><h1 id="pageTitle">Início</h1></div>
         <div class="topbar-actions">
+          <button id="ajudaBtn" class="secondary icon-btn" type="button" aria-label="Como usar o app" title="Como usar o app">?</button>
           <button id="refreshBtn" class="secondary" type="button" aria-label="Atualizar dados">↻ <span class="hide-sm">Atualizar</span></button>
           <button id="novoBtn" class="primary" type="button"><span aria-hidden="true">+</span> Novo<span class="hide-sm"> lançamento</span></button>
         </div>
@@ -245,7 +246,7 @@
         <details id="catArquivadasBox" class="panel arquivadas hidden"><summary>Categorias arquivadas <span id="catArqQtd" class="badge"></span></summary><ul id="catArquivadas" class="chips"></ul></details>
         <p class="muted ag-aviso">Toque numa categoria para renomear, trocar a cor, arquivar ou excluir.</p>
       </section>
-      <footer class="app-footer">© 2026 Fbiol · Versão 0.9.0</footer>
+      <footer class="app-footer">© 2026 Fbiol · Versão 0.10.0</footer>
     </main>
   </div>
 
@@ -332,6 +333,26 @@
         <button id="conviteGerar" class="primary" type="submit">Gerar link</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="tutorialDialog" class="dialog dialog-tutorial" aria-labelledby="tutTitulo" aria-describedby="tutTexto">
+    <div class="dialog-form">
+      <div class="dialog-head">
+        <span id="tutContagem" class="tut-contagem" aria-live="polite"></span>
+        <button id="tutFechar" class="ghost icon-btn" type="button" aria-label="Fechar o guia">✕</button>
+      </div>
+      <span id="tutIcone" class="tut-icone" aria-hidden="true"></span>
+      <h2 id="tutTitulo"></h2>
+      <p id="tutTexto" class="tut-texto"></p>
+      <ul id="tutItens" class="tut-itens"></ul>
+      <div id="tutPontos" class="tut-pontos" role="group" aria-label="Passos do guia"></div>
+      <div class="dialog-actions tut-acoes">
+        <button id="tutPular" class="ghost" type="button">Pular</button>
+        <span class="spacer"></span>
+        <button id="tutVoltar" class="secondary" type="button">Voltar</button>
+        <button id="tutProximo" class="primary" type="button">Próximo</button>
+      </div>
+    </div>
   </dialog>
 
   <dialog id="confirmDialog" class="dialog dialog-sm" aria-labelledby="confirmTitulo">

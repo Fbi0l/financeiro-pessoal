@@ -1,6 +1,6 @@
 {
   "name": "financeiro-pessoal",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "private": true,
   "description": "Testes automatizados do app financeiro. Nao usa credenciais do Supabase.",
   "scripts": {

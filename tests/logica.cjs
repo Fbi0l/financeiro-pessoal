@@ -45,3 +45,23 @@ assert.equal(expirouPorInatividade(String(1e12), 1e12 + INATIVIDADE_MS + 1), tru
 for (const v of [null, '', 'abc', '0', undefined]) assert.equal(expirouPorInatividade(v, 1e12), false, `sem registro: ${v}`);
 
 console.log('Logica aprovada: moeda, saldos, cores e mensagens de login.');
+// Tutorial de primeiro acesso: aparece so para quem ainda nao viu; cada passo aponta para uma tela que existe.
+{
+  const { PASSOS_TUTORIAL, deveMostrarTutorial } = require('../app.js');
+  assert.equal(deveMostrarTutorial({}, null), true, 'primeiro acesso');
+  assert.equal(deveMostrarTutorial(undefined, null), true, 'sem dados no perfil');
+  assert.equal(deveMostrarTutorial({ tutorial_visto: true }, null), false, 'ja viu em outro aparelho');
+  assert.equal(deveMostrarTutorial({}, '1'), false, 'ja viu neste aparelho');
+  assert.equal(deveMostrarTutorial({ tutorial_visto: 'true' }, null), true, 'so o valor verdadeiro conta');
+  const telas = ['inicio', 'lancamentos', 'assistente', 'contas', 'categorias'];
+  assert.ok(PASSOS_TUTORIAL.length >= 3);
+  for (const p of PASSOS_TUTORIAL) {
+    assert.ok(telas.includes(p.pagina), `tela do passo ${p.titulo}`);
+    assert.ok(p.titulo && p.texto && p.icone, 'passo completo');
+    assert.ok(Array.isArray(p.itens) && p.itens.length >= 1 && p.itens.every(t => typeof t === 'string' && t.length > 0));
+  }
+  const html = require('fs').readFileSync('index.html', 'utf8');
+  for (const id of ['tutorialDialog', 'tutTitulo', 'tutTexto', 'tutItens', 'tutPontos', 'tutProximo', 'tutVoltar', 'tutPular', 'tutFechar', 'tutContagem', 'tutIcone', 'ajudaBtn'])
+    assert.ok(html.includes(`id="${id}"`), `index.html tem #${id}`);
+}
+console.log('Tutorial de primeiro acesso aprovado.');

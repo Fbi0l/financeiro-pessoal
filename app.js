@@ -231,8 +231,39 @@ function textoSimples(s) {
     .trim();
 }
 
+/* ---------- Tutorial de primeiro acesso ---------- */
+// Cada passo mostra a tela correspondente ao fundo (pagina) e explica o básico em poucas linhas.
+const PASSOS_TUTORIAL = [
+  { pagina: 'inicio', icone: '◎', titulo: 'Boas-vindas ao Financeiro',
+    texto: 'Aqui você anota o que entra e o que sai, vê quanto tem em cada conta e entende para onde vai o seu dinheiro. Em um minuto você conhece o básico.',
+    itens: ['Suas finanças são só suas: outras pessoas que usam o app não veem nada seu.', 'Use “Próximo” para seguir ou “Pular” se já conhece o app.'] },
+  { pagina: 'contas', icone: '▣', titulo: '1. Cadastre suas contas',
+    texto: 'Conta é onde o dinheiro fica: conta do banco, poupança, carteira (dinheiro vivo) ou investimento.',
+    itens: ['Em Contas, toque em “+ Nova conta”.', 'Informe o saldo que aparece hoje no app do banco. O Financeiro ajusta os números para baterem.', 'O saldo ficou diferente do banco? Toque na conta e corrija o saldo de hoje.'] },
+  { pagina: 'categorias', icone: '◈', titulo: '2. Confira as categorias',
+    texto: 'Categorias dizem com o que você gastou (Mercado, Transporte…) ou de onde veio o dinheiro (Salário…). O app já vem com uma lista pronta.',
+    itens: ['Toque numa categoria para renomear, trocar a cor ou arquivar.', 'Use “+ Nova” para criar as suas.'] },
+  { pagina: 'lancamentos', icone: '⇅', titulo: '3. Anote entradas e saídas',
+    texto: 'Todo gasto, recebimento ou transferência entre suas contas é um lançamento.',
+    itens: ['Toque em “+ Novo”, no topo da tela, escolha Saída, Entrada ou Transferência e preencha valor, data, conta e categoria.', 'Conta que ainda vai vencer? Desmarque “Já foi pago”: ela fica como pendente até você confirmar.', 'Use ‹ e › para trocar de mês. Toque num lançamento para editar ou excluir.'] },
+  { pagina: 'lancamentos', icone: '⇪', titulo: '4. Importe o extrato do banco',
+    texto: 'Em vez de digitar tudo, baixe o extrato no app ou site do banco (arquivo OFX ou CSV) e toque em “Importar extrato”.',
+    itens: ['Você confere a lista e as categorias sugeridas antes de gravar.', 'Importar o mesmo arquivo de novo não duplica nada.', 'Importou na conta errada? Em “Importações recentes”, apague a importação inteira.'] },
+  { pagina: 'assistente', icone: '✦', titulo: '5. Peça ajuda ao assistente',
+    texto: 'O assistente lê seus lançamentos e ajuda a entender o mês.',
+    itens: ['“Analisar este mês” faz um resumo com sugestões de onde economizar.', 'Você também pode perguntar, por exemplo: “Quanto gastei com mercado este mês?”.', 'Ele usa inteligência artificial e pode errar: confira antes de decidir.'] },
+  { pagina: 'inicio', icone: '✓', titulo: 'Pronto para começar',
+    texto: 'No Início você vê o saldo total e o resumo do mês.',
+    itens: ['Instale o app no celular ou no computador para abrir com um toque, como um aplicativo.', 'Por segurança, o app sai sozinho depois de 30 minutos sem uso.', 'Para rever este guia, toque em “?” no topo da tela.'] }
+];
+/** Mostra o tutorial sozinho só se a pessoa ainda não o viu (no perfil dela ou neste aparelho). */
+function deveMostrarTutorial(metadados, vistoNoAparelho) {
+  return !(metadados && metadados.tutorial_visto === true) && vistoNoAparelho !== '1';
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
+    PASSOS_TUTORIAL, deveMostrarTutorial,
     textoSimples, codigoDoLink, linkConvite, expirouPorInatividade, INATIVIDADE_MS, CORES, lerSaldo, saldoInicialPara, validarConta, validarCategoria, mensagemErroCadastro,
     formatarMoeda, somarSaldos, corSegura, rotuloTipoConta, mensagemErroLogin, lerValor, valorParaCampo,
     hojeISO, intervaloMes, somarMes, rotuloMes, dataValida, rotuloDia, validarLancamento, montarRegistro,
@@ -1151,6 +1182,71 @@ function iniciar() {
     } finally { $('conviteBtn').disabled = false; }
   }
 
+  /* ----- Tutorial de primeiro acesso ----- */
+  const tut = { passo: 0, origem: 'inicio', usuario: null };
+  const chaveTutorial = id => 'tutorialVisto:' + id;
+  function desenharPassoTutorial() {
+    const total = PASSOS_TUTORIAL.length, p = PASSOS_TUTORIAL[tut.passo];
+    const ultimo = tut.passo === total - 1;
+    irPara(p.pagina); // mostra ao fundo a tela de que o passo fala
+    $('tutContagem').textContent = `Passo ${tut.passo + 1} de ${total}`;
+    $('tutIcone').textContent = p.icone;
+    $('tutTitulo').textContent = p.titulo;
+    $('tutTexto').textContent = p.texto;
+    $('tutItens').replaceChildren(...p.itens.map(t => el('li', null, t)));
+    $('tutPontos').replaceChildren(...PASSOS_TUTORIAL.map((q, i) => {
+      const b = el('button', 'tut-ponto' + (i === tut.passo ? ' ativo' : ''));
+      b.type = 'button';
+      b.setAttribute('aria-label', `Ir para o passo ${i + 1}: ${q.titulo}`);
+      if (i === tut.passo) b.setAttribute('aria-current', 'step');
+      b.addEventListener('click', () => { tut.passo = i; desenharPassoTutorial(); });
+      return b;
+    }));
+    $('tutVoltar').classList.toggle('hidden', tut.passo === 0);
+    $('tutPular').classList.toggle('hidden', ultimo);
+    $('tutProximo').textContent = ultimo ? 'Começar' : 'Próximo';
+  }
+  function abrirTutorial() {
+    if ($('tutorialDialog').open) return;
+    const atual = location.hash.slice(1);
+    tut.origem = atual && atual !== 'importar' ? atual : 'inicio';
+    tut.passo = 0;
+    desenharPassoTutorial();
+    $('tutorialDialog').showModal();
+    $('tutProximo').focus();
+  }
+  function marcarTutorialVisto() {
+    if (!tut.usuario) return;
+    try { localStorage.setItem(chaveTutorial(tut.usuario.id), '1'); } catch (_) { /* sem armazenamento */ }
+    // No perfil da pessoa: assim ele não volta a aparecer em outro aparelho.
+    if (tut.usuario.user_metadata?.tutorial_visto !== true)
+      db.auth.updateUser({ data: { tutorial_visto: true } }).catch(() => { /* fica só neste aparelho */ });
+  }
+  function talvezMostrarTutorial(usuario) {
+    tut.usuario = usuario;
+    let visto = null;
+    try { visto = localStorage.getItem(chaveTutorial(usuario.id)); } catch (_) { /* sem armazenamento */ }
+    if (deveMostrarTutorial(usuario.user_metadata, visto)) abrirTutorial();
+  }
+  $('ajudaBtn').addEventListener('click', abrirTutorial);
+  $('tutProximo').addEventListener('click', () => {
+    if (tut.passo < PASSOS_TUTORIAL.length - 1) { tut.passo++; desenharPassoTutorial(); $('tutProximo').focus(); }
+    else $('tutorialDialog').close();
+  });
+  $('tutVoltar').addEventListener('click', () => { if (tut.passo > 0) { tut.passo--; desenharPassoTutorial(); } if (tut.passo === 0) $('tutProximo').focus(); });
+  ['tutPular', 'tutFechar'].forEach(id => $(id).addEventListener('click', () => $('tutorialDialog').close()));
+  $('tutorialDialog').addEventListener('keydown', ev => {
+    if (ev.target.closest?.('.tut-pontos')) return;
+    if (ev.key === 'ArrowRight' && tut.passo < PASSOS_TUTORIAL.length - 1) { tut.passo++; desenharPassoTutorial(); }
+    if (ev.key === 'ArrowLeft' && tut.passo > 0) { tut.passo--; desenharPassoTutorial(); }
+  });
+  // Fechou de qualquer jeito (Começar, Pular, ✕ ou Esc): conta como visto e volta para onde estava.
+  $('tutorialDialog').addEventListener('close', () => {
+    if (!tut.usuario) return; // fechou porque a pessoa saiu da conta
+    marcarTutorialVisto();
+    irPara(tut.origem);
+  });
+
   /* ----- Sessão ----- */
   function entrarNoApp(session) {
     $('userEmail').textContent = session.user.email || '';
@@ -1158,11 +1254,13 @@ function iniciar() {
     irPara(location.hash.slice(1));
     carregarDados();
     carregarConvites().catch(() => $('convitesPainel').classList.add('hidden'));
+    talvezMostrarTutorial(session.user);
   }
   function sairDoApp() {
     if ($('txDialog').open) $('txDialog').close();
     if ($('confirmDialog').open) $('confirmDialog').close();
-    ['contaDialog', 'catDialog', 'conviteDialog'].forEach(id => { if ($(id).open) $(id).close(); });
+    tut.usuario = null;
+    ['contaDialog', 'catDialog', 'conviteDialog', 'tutorialDialog'].forEach(id => { if ($(id).open) $(id).close(); });
     Object.assign(estado, { contas: [], categorias: [], lancamentos: [], editando: null, excluindo: null });
     limparImportacao();
     limparConversa();

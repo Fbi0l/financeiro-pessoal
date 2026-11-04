@@ -2,6 +2,13 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.10.0 — Guia de primeiro acesso
+
+- **Tutorial ao entrar pela primeira vez**: uma janela com 7 passos curtos (boas-vindas, contas, categorias, lançamentos, importar extrato, assistente e dicas finais). A cada passo, a tela de que ele fala aparece ao fundo.
+- Dá para avançar, voltar, pular para qualquer passo pelos pontinhos (ou pelas setas do teclado) e fechar a qualquer momento.
+- **Aparece uma vez por pessoa**: ao fechar, fica marcado no perfil dela (`tutorial_visto` nos dados do usuário) e neste aparelho, então não volta em outro celular ou computador. Quem já usava o app também vê o guia uma vez.
+- **Botão "?"** no topo da tela reabre o guia quando quiser. Ao fechar, o app volta para a tela onde a pessoa estava.
+
 ## Versão 0.9.0 — Correções do diagnóstico de segurança
 
 - **Limite diário do assistente por pessoa** (40 usos por dia): ninguém esgota sozinho a cota gratuita da IA. O contador fica no banco, fora da API.
