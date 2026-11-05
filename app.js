@@ -254,16 +254,37 @@ const PASSOS_TUTORIAL = [
     itens: ['“Analisar este mês” faz um resumo com sugestões de onde economizar.', 'Você também pode perguntar, por exemplo: “Quanto gastei com mercado este mês?”.', 'Ele usa inteligência artificial e pode errar: confira antes de decidir.'] },
   { pagina: 'inicio', icone: '✓', titulo: 'Pronto para começar',
     texto: 'No Início você vê o saldo total e o resumo do mês.',
-    itens: ['Instale o app no celular ou no computador para abrir com um toque, como um aplicativo.', 'Por segurança, o app sai sozinho depois de 30 minutos sem uso.', 'Para rever este guia, toque em “?” no topo da tela.'] }
+    itens: ['Instale o app no celular ou no computador para abrir com um toque, como um aplicativo.', 'Por segurança, o app sai sozinho depois de 30 minutos sem uso.', 'Prefere a tela escura? Toque em ☾ no topo para ligar o modo escuro.', 'Para rever este guia, toque em “?” no topo da tela.'] }
 ];
 /** Mostra o tutorial sozinho só se a pessoa ainda não o viu (no perfil dela ou neste aparelho). */
 function deveMostrarTutorial(metadados, vistoNoAparelho) {
   return !(metadados && metadados.tutorial_visto === true) && vistoNoAparelho !== '1';
 }
 
+/* ---------- Avisos de novidade ----------
+   Toda mudança que afeta o uso do app ganha um item aqui, o mais novo no topo.
+   Cada aviso aparece uma única vez por pessoa (fica marcado no perfil dela e no aparelho).
+   Quem entra pela primeira vez vê o guia e não recebe os avisos antigos. */
+const NOVIDADES = [
+  { id: 'modo-escuro', versao: '0.11.0', icone: '☾', titulo: 'Agora temos o modo escuro',
+    texto: 'Toque em ☾ no topo da tela para alternar entre claro e escuro. Enquanto você não escolher, o app segue o tema do seu aparelho.',
+    acao: { tipo: 'tema-escuro', rotulo: 'Experimentar' } }
+];
+/** Novidades que a pessoa ainda não viu, juntando o que está marcado no perfil e neste aparelho. */
+function novidadesPendentes(lista, vistasNoPerfil, vistasNoAparelho) {
+  const comoLista = v => (Array.isArray(v) ? v : []).filter(x => typeof x === 'string');
+  const vistas = new Set([...comoLista(vistasNoPerfil), ...comoLista(vistasNoAparelho)]);
+  return (Array.isArray(lista) ? lista : []).filter(n => n && !vistas.has(n.id));
+}
+/** Junta as marcações sem repetir e sem guardar ids que não existem mais na lista. */
+function juntarVistas(lista, ...grupos) {
+  const validas = new Set((Array.isArray(lista) ? lista : []).map(n => n.id));
+  return [...new Set(grupos.flatMap(g => (Array.isArray(g) ? g : [])))].filter(id => validas.has(id));
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
-    PASSOS_TUTORIAL, deveMostrarTutorial,
+    PASSOS_TUTORIAL, deveMostrarTutorial, NOVIDADES, novidadesPendentes, juntarVistas,
     textoSimples, codigoDoLink, linkConvite, expirouPorInatividade, INATIVIDADE_MS, CORES, lerSaldo, saldoInicialPara, validarConta, validarCategoria, mensagemErroCadastro,
     formatarMoeda, somarSaldos, corSegura, rotuloTipoConta, mensagemErroLogin, lerValor, valorParaCampo,
     hojeISO, intervaloMes, somarMes, rotuloMes, dataValida, rotuloDia, validarLancamento, montarRegistro,
@@ -1226,7 +1247,9 @@ function iniciar() {
     tut.usuario = usuario;
     let visto = null;
     try { visto = localStorage.getItem(chaveTutorial(usuario.id)); } catch (_) { /* sem armazenamento */ }
-    if (deveMostrarTutorial(usuario.user_metadata, visto)) abrirTutorial();
+    if (!deveMostrarTutorial(usuario.user_metadata, visto)) return false;
+    abrirTutorial();
+    return true;
   }
   $('ajudaBtn').addEventListener('click', abrirTutorial);
   $('tutProximo').addEventListener('click', () => {
@@ -1247,6 +1270,74 @@ function iniciar() {
     irPara(tut.origem);
   });
 
+  /* ----- Tema claro / escuro ----- */
+  function desenharBotaoTema(tema) {
+    const escuro = tema === 'escuro';
+    const rotulo = escuro ? 'Ativar modo claro' : 'Ativar modo escuro';
+    $('temaBtn').setAttribute('aria-label', rotulo);
+    $('temaBtn').title = rotulo;
+    $('temaBtn').querySelector('.tema-ico').textContent = escuro ? '\u2600\uFE0E' : '\u263E';
+    desenharAcaoNovidade();
+  }
+  if (window.Tema) {
+    $('temaBtn').addEventListener('click', () => window.Tema.alternar());
+    window.Tema.aoMudar(desenharBotaoTema);
+  } else $('temaBtn').classList.add('hidden');
+
+  /* ----- Avisos de novidade ----- */
+  const nov = { usuario: null, atual: null, vistas: [] };
+  const chaveNovidades = id => 'novidadesVistas:' + id;
+  function lerVistasDoAparelho(id) {
+    try { const v = JSON.parse(localStorage.getItem(chaveNovidades(id)) || '[]'); return Array.isArray(v) ? v : []; } catch (_) { return []; }
+  }
+  function marcarNovidadesVistas(ids) {
+    if (!nov.usuario || !ids.length) return;
+    nov.vistas = juntarVistas(NOVIDADES, nov.vistas, ids);
+    try { localStorage.setItem(chaveNovidades(nov.usuario.id), JSON.stringify(nov.vistas)); } catch (_) { /* sem armazenamento */ }
+    // No perfil da pessoa: assim o aviso não volta em outro aparelho.
+    db.auth.updateUser({ data: { novidades_vistas: nov.vistas } }).catch(() => { /* fica só neste aparelho */ });
+  }
+  function desenharAcaoNovidade() {
+    const n = nov.atual, b = $('novidadeAcao');
+    // "Experimentar" o modo escuro só faz sentido enquanto o app está claro.
+    const mostrar = Boolean(n && n.acao && !(n.acao.tipo === 'tema-escuro' && (!window.Tema || window.Tema.atual() === 'escuro')));
+    b.classList.toggle('hidden', !mostrar);
+    if (mostrar) b.textContent = n.acao.rotulo;
+  }
+  function mostrarNovidade() {
+    const [n] = novidadesPendentes(NOVIDADES, nov.vistas, []);
+    nov.atual = n || null;
+    $('novidadeAviso').classList.toggle('hidden', !n);
+    if (!n) return;
+    $('novidadeIcone').textContent = n.icone || '✦';
+    $('novidadeTitulo').textContent = n.titulo;
+    $('novidadeTexto').textContent = n.texto;
+    desenharAcaoNovidade();
+  }
+  function fecharNovidade() {
+    if (!nov.atual) return;
+    marcarNovidadesVistas([nov.atual.id]);
+    mostrarNovidade(); // havendo outra novidade pendente, ela aparece em seguida
+  }
+  function prepararNovidades(usuario, primeiroAcesso) {
+    nov.usuario = usuario;
+    nov.vistas = juntarVistas(NOVIDADES, usuario.user_metadata?.novidades_vistas, lerVistasDoAparelho(usuario.id));
+    // Primeiro acesso: o guia já mostra o app como ele é hoje, então os avisos antigos não aparecem.
+    if (primeiroAcesso) marcarNovidadesVistas(NOVIDADES.map(n => n.id));
+    mostrarNovidade();
+  }
+  function limparNovidades() {
+    Object.assign(nov, { usuario: null, atual: null, vistas: [] });
+    $('novidadeAviso').classList.add('hidden');
+  }
+  $('novidadeFechar').addEventListener('click', fecharNovidade);
+  $('novidadeAcao').addEventListener('click', () => {
+    const n = nov.atual;
+    if (n?.acao?.tipo === 'tema-escuro' && window.Tema) window.Tema.definir('escuro');
+    fecharNovidade();
+  });
+  if (window.Tema) desenharBotaoTema(window.Tema.atual());
+
   /* ----- Sessão ----- */
   function entrarNoApp(session) {
     $('userEmail').textContent = session.user.email || '';
@@ -1254,12 +1345,13 @@ function iniciar() {
     irPara(location.hash.slice(1));
     carregarDados();
     carregarConvites().catch(() => $('convitesPainel').classList.add('hidden'));
-    talvezMostrarTutorial(session.user);
+    prepararNovidades(session.user, talvezMostrarTutorial(session.user));
   }
   function sairDoApp() {
     if ($('txDialog').open) $('txDialog').close();
     if ($('confirmDialog').open) $('confirmDialog').close();
     tut.usuario = null;
+    limparNovidades();
     ['contaDialog', 'catDialog', 'conviteDialog', 'tutorialDialog'].forEach(id => { if ($(id).open) $(id).close(); });
     Object.assign(estado, { contas: [], categorias: [], lancamentos: [], editando: null, excluindo: null });
     limparImportacao();

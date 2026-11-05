@@ -8,6 +8,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#1e2547">
+  <!-- Tema claro/escuro: carrega antes de tudo (sem defer) para a tela nao piscar em branco. -->
+  <script src="tema.js?v=0.11.0"></script>
   <title>Financeiro</title>
   <link rel="icon" href="assets/icone.svg" type="image/svg+xml">
   <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
@@ -18,10 +20,10 @@
   <meta name="apple-mobile-web-app-title" content="Financeiro">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="application-name" content="Financeiro">
-  <link rel="stylesheet" href="styles.css?v=0.10.0">
+  <link rel="stylesheet" href="styles.css?v=0.11.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-  <script src="importar.js?v=0.10.0" defer></script>
-  <script src="app.js?v=0.10.0" defer></script>
+  <script src="importar.js?v=0.11.0" defer></script>
+  <script src="app.js?v=0.11.0" defer></script>
 </head>
 <body>
   <div id="bootView" class="boot" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Carregando…</span></div>
@@ -37,7 +39,7 @@
       <p id="loginMessage" class="message" role="alert" aria-live="assertive"></p>
       <small>Acesso restrito ao titular. Não há cadastro aberto.</small>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.10.0</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.11.0</footer>
   </div>
 
   <div id="conviteView" class="login-wrap hidden">
@@ -55,7 +57,7 @@
       <p id="conviteMensagem" class="message" role="alert" aria-live="assertive"></p>
       <button id="conviteIrLogin" class="secondary full hidden" type="button">Ir para o login</button>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.10.0</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.11.0</footer>
   </div>
 
   <div id="appView" class="app hidden">
@@ -70,7 +72,7 @@
       </nav>
       <div class="sidebar-bottom">
         <span id="userEmail" class="user-email"></span>
-        <small class="versao-app">Versão 0.10.0</small>
+        <small class="versao-app">Versão 0.11.0</small>
         <button id="logoutBtn" class="nav-item" type="button" aria-label="Sair" title="Sair"><span class="nav-ico" aria-hidden="true">↪</span><span>Sair</span></button>
       </div>
     </aside>
@@ -79,12 +81,21 @@
       <header class="topbar">
         <div><p id="pageEyebrow" class="eyebrow"></p><h1 id="pageTitle">Início</h1></div>
         <div class="topbar-actions">
+          <button id="temaBtn" class="secondary icon-btn" type="button" aria-label="Ativar modo escuro" title="Ativar modo escuro"><span class="tema-ico" aria-hidden="true">☾</span></button>
           <button id="ajudaBtn" class="secondary icon-btn" type="button" aria-label="Como usar o app" title="Como usar o app">?</button>
           <button id="refreshBtn" class="secondary" type="button" aria-label="Atualizar dados">↻ <span class="hide-sm">Atualizar</span></button>
           <button id="novoBtn" class="primary" type="button"><span aria-hidden="true">+</span> Novo<span class="hide-sm"> lançamento</span></button>
         </div>
       </header>
       <p id="globalMessage" class="message" role="status" aria-live="polite"></p>
+      <div id="novidadeAviso" class="novidade hidden" role="status" aria-live="polite">
+        <span id="novidadeIcone" class="novidade-ico" aria-hidden="true"></span>
+        <div class="novidade-texto"><span class="tag tag-novidade">Novidade</span><strong id="novidadeTitulo"></strong><small id="novidadeTexto" class="muted"></small></div>
+        <div class="novidade-acoes">
+          <button id="novidadeAcao" class="secondary hidden" type="button"></button>
+          <button id="novidadeFechar" class="ghost icon-btn" type="button" aria-label="Fechar aviso" title="Entendi">✕</button>
+        </div>
+      </div>
 
       <section id="inicioPage" class="page" aria-labelledby="pageTitle">
         <div class="hero">
@@ -246,7 +257,7 @@
         <details id="catArquivadasBox" class="panel arquivadas hidden"><summary>Categorias arquivadas <span id="catArqQtd" class="badge"></span></summary><ul id="catArquivadas" class="chips"></ul></details>
         <p class="muted ag-aviso">Toque numa categoria para renomear, trocar a cor, arquivar ou excluir.</p>
       </section>
-      <footer class="app-footer">© 2026 Fbiol · Versão 0.10.0</footer>
+      <footer class="app-footer">© 2026 Fbiol · Versão 0.11.0</footer>
     </main>
   </div>
 

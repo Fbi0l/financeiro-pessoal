@@ -23,6 +23,10 @@ App de finanças pessoais do Fabio. Site estático (HTML, CSS e JavaScript puros
 
 A versão aparece em `index.html` (rodapés e `?v=` dos arquivos), `sw.js` (nome do cache e lista de arquivos) e `package.json`. Ao publicar uma mudança visível, suba a versão em todos esses lugares e registre no topo do `README.md`. O teste do site confere que estão iguais.
 
+## Avisos de novidade (pedido do dono)
+
+Toda mudança que afeta a experiência de uso (tela nova, botão novo, algo que muda de lugar ou de jeito) ganha um aviso curto no app: acrescente um item no topo de `NOVIDADES` em `app.js`, com a versão nova, um título como "Agora temos o modo escuro" e uma frase dizendo onde encontrar. Correções invisíveis e mudanças só de banco não precisam de aviso.
+
 ## Testes
 
 - `npm test`: lógica, importação, agente, convites e segurança do site (não usa rede nem Supabase).

@@ -2,6 +2,14 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.11.0 — Modo escuro e avisos de novidade
+
+- **Modo escuro**: o botão **☾** no topo da tela alterna entre claro e escuro (no escuro ele vira **☀**). A escolha fica salva no aparelho. Enquanto a pessoa não escolher, o app segue o tema do celular ou computador e acompanha quando ele muda.
+- A tela já abre no tema certo, sem piscar em branco: o pequeno arquivo `tema.js` é lido antes do resto da página. A barra do celular (app instalado) também escurece.
+- As cores fixas do CSS viraram variáveis (`--field`, `--label`, `--hover`…), e o modo escuro troca todas de uma vez: telas, janelas, campos, login, convites, importação e assistente. Verde de entrada e vermelho de saída continuam com o mesmo significado, ajustados para ler bem no fundo escuro.
+- **Avisos de novidade**: toda mudança que afeta o uso do app aparece uma vez num aviso pequeno no topo da tela ("Novidade: agora temos o modo escuro"), com um botão para fechar. Ao fechar, fica marcado no perfil da pessoa (`novidades_vistas`) e no aparelho, então não volta em outro celular. Quem entra pela primeira vez vê o guia, que já fala do modo escuro, e não recebe avisos antigos.
+- Para avisar uma novidade futura, basta acrescentar um item no topo da lista `NOVIDADES` em `app.js`. O teste `tests/tema-novidades.cjs` confere que a novidade mais recente é da versão atual.
+
 ## Versão 0.10.0 — Guia de primeiro acesso
 
 - **Tutorial ao entrar pela primeira vez**: uma janela com 7 passos curtos (boas-vindas, contas, categorias, lançamentos, importar extrato, assistente e dicas finais). A cada passo, a tela de que ele fala aparece ao fundo.
