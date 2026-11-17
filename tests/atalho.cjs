@@ -36,5 +36,12 @@ assert.ok(passo, 'tutorial tem passo do celular');
 assert.equal(passo.pagina, 'contas');
 assert.ok(passo.itens.some(i => /Criar chave/.test(i)) && passo.itens.some(i => /Cancele a chave/.test(i)));
 // Novidade da versao.
-assert.equal(NOVIDADES[0].id, 'lancar-pelo-celular');
+assert.ok(NOVIDADES.some(n => n.id === 'lancar-pelo-celular'));
+// Instalar o atalho pronto: link do iCloud (sem chave no link) e botao que copia a chave antes de abrir.
+assert.match(app, /const LINK_ATALHO_GASTEI = 'https:\/\/www\.icloud\.com\/shortcuts\/[0-9a-f]{32}';/);
+assert.ok(html.includes('id="atalhoInstalar"'), 'botao instalar');
+assert.ok(app.includes("$('atalhoInstalar').addEventListener('click', instalarAtalho)"));
+const corpo = app.slice(app.indexOf('async function instalarAtalho'), app.indexOf('async function copiarCampo'));
+assert.ok(corpo.indexOf('clipboard.writeText') < corpo.indexOf('location.href'), 'copia antes de abrir o link');
+assert.ok(passo.itens.some(i => /Adicionar Atalho/.test(i)), 'tutorial explica a instalacao');
 console.log('Lancar pelo celular aprovado: tela, guia, tutorial e funcoes do banco.');

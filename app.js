@@ -5,6 +5,8 @@
 
 const SUPABASE_URL = 'https://ruphlnabikvnadlmeisg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_sTlK2zW1wno8zVjutjD9JA_r29jZ1JV';
+// Atalho "Gastei" pronto, no iCloud. Ao instalar, o iPhone pede a chave da pessoa (a chave não vai no link).
+const LINK_ATALHO_GASTEI = 'https://www.icloud.com/shortcuts/b9a627f9c082411a865a9b51bc70f4a0';
 
 /* ---------- Funções puras (testadas em tests/logica.cjs) ---------- */
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -309,7 +311,7 @@ const PASSOS_TUTORIAL = [
     itens: ['Você confere a lista e as categorias sugeridas antes de gravar.', 'Importar o mesmo arquivo de novo não duplica nada.', 'Importou na conta errada? Em “Importações recentes”, apague a importação inteira.'] },
   { pagina: 'contas', icone: '⚡', titulo: '5. Lance pelo celular',
     texto: 'Gastou? Registre em segundos sem abrir o app, pelo Atalho do iPhone. Pagando por aproximação com o cartão na Carteira, o gasto pode entrar sozinho.',
-    itens: ['Em Contas, no painel “Lançar pelo celular”, toque em “Criar chave” e copie a chave.', 'Abra “Como configurar no iPhone” e siga os passos para montar o atalho “Gastei” e a automação da Carteira.', 'A chave só inclui gastos na sua conta, nunca lê seus dados. Perdeu o celular? Cancele a chave no mesmo painel.'] },
+    itens: ['Em Contas, no painel “Lançar pelo celular”, toque em “Criar chave”.', 'Toque em “Copiar chave e instalar o atalho”, depois em “Adicionar Atalho”, e cole a chave quando o iPhone pedir.', 'A chave só inclui gastos na sua conta, nunca lê seus dados. Perdeu o celular? Cancele a chave no mesmo painel.'] },
   { pagina: 'assistente', icone: '✦', titulo: '6. Veja o relatório e peça ajuda',
     texto: 'No Assistente, o relatório do mês mostra entradas, saídas por categoria, maiores gastos e se o dinheiro dá até o fim do mês.',
     itens: ['“Analisar este mês com IA” faz um resumo com sugestões de onde economizar.', 'Você também pode perguntar, por exemplo: “Quanto gastei com mercado este mês?”.', 'Ele usa inteligência artificial e pode errar: confira antes de decidir.'] },
@@ -327,6 +329,8 @@ function deveMostrarTutorial(metadados, vistoNoAparelho) {
    Cada aviso aparece uma única vez por pessoa (fica marcado no perfil dela e no aparelho).
    Quem entra pela primeira vez vê o guia e não recebe os avisos antigos. */
 const NOVIDADES = [
+  { id: 'instalar-atalho', versao: '0.14.1', icone: '⚡', titulo: 'Atalho do iPhone em 3 toques',
+    texto: 'Em Contas › Lançar pelo celular, crie sua chave e toque em “Copiar chave e instalar o atalho”. O iPhone instala o atalho Gastei pronto.' },
   { id: 'lancar-pelo-celular', versao: '0.14.0', icone: '⚡', titulo: 'Agora dá para lançar gastos pelo celular',
     texto: 'Em Contas, no painel “Lançar pelo celular”, crie sua chave e siga o passo a passo para lançar com o Atalho do iPhone, sem abrir o app.' },
   { id: 'relatorio-assistente', versao: '0.13.0', icone: '▤', titulo: 'Relatório do mês no Assistente',
@@ -1278,6 +1282,20 @@ function iniciar() {
     $('atalhoChave').select();
     carregarChavesAtalho();
   }
+  // Copia a chave e abre o atalho pronto. A cópia vem primeiro, ainda no toque (o iPhone exige isso).
+  let instalarTentou = false;
+  async function instalarAtalho() {
+    const chave = $('atalhoChave').value;
+    let copiou = false;
+    try { await navigator.clipboard.writeText(chave); copiou = true; } catch (_) { $('atalhoChave').select(); }
+    if (!copiou && !instalarTentou) {
+      instalarTentou = true;
+      aviso('atalhoMensagem', 'Não consegui copiar sozinho. Toque em “Copiar só a chave” e depois de novo em “Copiar chave e instalar o atalho”.');
+      return;
+    }
+    aviso('atalhoMensagem', 'Abrindo o atalho… Toque em “Adicionar Atalho” e cole a chave quando o iPhone pedir.', true);
+    setTimeout(() => { location.href = LINK_ATALHO_GASTEI; }, 500);
+  }
   async function copiarCampo(id, msgId) {
     try { await navigator.clipboard.writeText($(id).value); aviso(msgId, 'Copiado.', true); }
     catch (_) { $(id).select(); aviso(msgId, 'Selecione o texto e copie.', true); }
@@ -1644,6 +1662,7 @@ function iniciar() {
   ['conviteFechar', 'conviteCancelar'].forEach(id => $(id).addEventListener('click', () => $('conviteDialog').close()));
   $('conviteCopiar').addEventListener('click', copiarConvite);
   $('atalhoForm').addEventListener('submit', criarChaveAtalho);
+  $('atalhoInstalar').addEventListener('click', instalarAtalho);
   document.querySelectorAll('.atalho-copiar').forEach(b => b.addEventListener('click', () => copiarCampo(b.dataset.alvo, b.dataset.alvo === 'atalhoChave' ? 'atalhoMensagem' : 'atalhoGuiaMensagem')));
   $('atalhoUrlLancar').value = SUPABASE_URL + '/rest/v1/rpc/atalho_lancar';
   $('atalhoUrlContas').value = SUPABASE_URL + '/rest/v1/rpc/atalho_contas';

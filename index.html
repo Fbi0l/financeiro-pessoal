@@ -9,7 +9,7 @@
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#1e2547">
   <!-- Tema claro/escuro: carrega antes de tudo (sem defer) para a tela nao piscar em branco. -->
-  <script src="tema.js?v=0.14.0"></script>
+  <script src="tema.js?v=0.14.1"></script>
   <title>Financeiro</title>
   <link rel="icon" href="assets/icone.svg" type="image/svg+xml">
   <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
@@ -20,10 +20,10 @@
   <meta name="apple-mobile-web-app-title" content="Financeiro">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="application-name" content="Financeiro">
-  <link rel="stylesheet" href="styles.css?v=0.14.0">
+  <link rel="stylesheet" href="styles.css?v=0.14.1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-  <script src="importar.js?v=0.14.0" defer></script>
-  <script src="app.js?v=0.14.0" defer></script>
+  <script src="importar.js?v=0.14.1" defer></script>
+  <script src="app.js?v=0.14.1" defer></script>
 </head>
 <body>
   <div id="bootView" class="boot" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Carregando…</span></div>
@@ -39,7 +39,7 @@
       <p id="loginMessage" class="message" role="alert" aria-live="assertive"></p>
       <small>Acesso restrito ao titular. Não há cadastro aberto.</small>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.14.0</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.14.1</footer>
   </div>
 
   <div id="conviteView" class="login-wrap hidden">
@@ -57,7 +57,7 @@
       <p id="conviteMensagem" class="message" role="alert" aria-live="assertive"></p>
       <button id="conviteIrLogin" class="secondary full hidden" type="button">Ir para o login</button>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.14.0</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.14.1</footer>
   </div>
 
   <div id="appView" class="app hidden">
@@ -72,7 +72,7 @@
       </nav>
       <div class="sidebar-bottom">
         <span id="userEmail" class="user-email"></span>
-        <small class="versao-app">Versão 0.14.0</small>
+        <small class="versao-app">Versão 0.14.1</small>
         <button id="logoutBtn" class="nav-item" type="button" aria-label="Sair" title="Sair"><span class="nav-ico" aria-hidden="true">↪</span><span>Sair</span></button>
       </div>
     </aside>
@@ -270,19 +270,25 @@
         <details id="contasArquivadasBox" class="panel arquivadas hidden"><summary>Contas arquivadas <span id="contasArqQtd" class="badge"></span></summary><ul id="contasArquivadas" class="list list-click"></ul></details>
         <div id="atalhoPainel" class="panel">
           <div class="panel-head"><div><h2>Lançar pelo celular</h2><p class="muted panel-sub">Registre gastos sem abrir o app, pelo Atalho do iPhone. A chave identifica você: com ela só dá para incluir lançamentos na sua conta, nunca ler seus dados.</p></div></div>
+          <ol class="atalho-passos">
+            <li><strong>Crie sua chave</strong> aqui embaixo (pode dar um nome, como “meu iPhone”).</li>
+            <li>Toque em <strong>Copiar chave e instalar o atalho</strong>. O iPhone abre o atalho <strong>Gastei</strong>.</li>
+            <li>Toque em <strong>Adicionar Atalho</strong> e, quando ele pedir, <strong>cole a chave</strong>. Pronto: toque no atalho (ou diga “E aí Siri, Gastei”), escolha a conta, o valor e a descrição.</li>
+          </ol>
           <form id="atalhoForm" class="atalho-novo">
             <label class="sr-only" for="atalhoApelido">Nome do aparelho</label>
             <input id="atalhoApelido" maxlength="40" autocomplete="off" placeholder="Nome do aparelho (ex.: meu iPhone)">
             <button id="atalhoCriar" class="primary" type="submit">Criar chave</button>
           </form>
           <div id="atalhoGerada" class="convite-gerado hidden" role="status">
-            <p><strong>Chave criada.</strong> Copie agora e cole no Atalho: por segurança, ela não aparece de novo.</p>
-            <div class="convite-link"><input id="atalhoChave" readonly aria-label="Sua chave do atalho"><button class="secondary atalho-copiar" type="button" data-alvo="atalhoChave">Copiar</button></div>
+            <p><strong>Chave criada.</strong> Use agora: por segurança, ela não aparece de novo.</p>
+            <button id="atalhoInstalar" class="primary atalho-instalar" type="button">Copiar chave e instalar o atalho</button>
+            <div class="convite-link"><input id="atalhoChave" readonly aria-label="Sua chave do atalho"><button class="secondary atalho-copiar" type="button" data-alvo="atalhoChave">Copiar só a chave</button></div>
           </div>
           <p id="atalhoMensagem" class="message" role="status" aria-live="polite"></p>
           <ul id="atalhoLista" class="list convites-lista"></ul>
           <details id="atalhoGuia" class="atalho-guia">
-            <summary>Como configurar no iPhone</summary>
+            <summary>Montar o atalho à mão e compras por aproximação</summary>
             <div class="atalho-guia-corpo">
               <p class="muted">Você vai precisar de três informações. Toque em <strong>Copiar</strong> ao lado de cada uma quando o passo pedir.</p>
               <div class="atalho-dados">
@@ -302,6 +308,7 @@
                 <li>Adicione <strong>Mostrar Notificação</strong> com o resultado (Conteúdo do URL). Pronto: toque em compartilhar e escolha <strong>Adicionar à Tela de Início</strong>. Também funciona dizendo “E aí Siri, Gastei”.</li>
               </ol>
               <h3>2. Automático nas compras por aproximação (Carteira)</h3>
+              <p class="muted">Em breve, um atalho pronto para isso também. Por enquanto, monte assim:</p>
               <ol>
                 <li>Precisa do <strong>iOS 17 ou mais novo</strong> e do cartão na Carteira do iPhone. Só funciona ao pagar aproximando o iPhone da maquininha (não em compras online).</li>
                 <li>No app Atalhos, vá em <strong>Automação</strong> › <strong>+</strong> › <strong>Transação</strong>. Escolha o cartão, marque <strong>Executar Imediatamente</strong> e toque em <strong>Próximo</strong> › <strong>Novo Atalho em Branco</strong>.</li>
@@ -324,7 +331,7 @@
         <details id="catArquivadasBox" class="panel arquivadas hidden"><summary>Categorias arquivadas <span id="catArqQtd" class="badge"></span></summary><ul id="catArquivadas" class="chips"></ul></details>
         <p class="muted ag-aviso">Toque numa categoria para renomear, trocar a cor, arquivar ou excluir.</p>
       </section>
-      <footer class="app-footer">© 2026 Fbiol · Versão 0.14.0</footer>
+      <footer class="app-footer">© 2026 Fbiol · Versão 0.14.1</footer>
     </main>
   </div>
 
