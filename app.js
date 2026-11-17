@@ -311,7 +311,7 @@ const PASSOS_TUTORIAL = [
     itens: ['Você confere a lista e as categorias sugeridas antes de gravar.', 'Importar o mesmo arquivo de novo não duplica nada.', 'Importou na conta errada? Em “Importações recentes”, apague a importação inteira.'] },
   { pagina: 'contas', icone: '⚡', titulo: '5. Lance pelo celular',
     texto: 'Gastou? Registre em segundos sem abrir o app, pelo Atalho do iPhone. Pagando por aproximação com o cartão na Carteira, o gasto pode entrar sozinho.',
-    itens: ['Em Contas, no painel “Lançar pelo celular”, toque em “Criar chave”.', 'Toque em “Copiar chave e instalar o atalho”, depois em “Adicionar Atalho”, e cole a chave quando o iPhone pedir.', 'A chave só inclui gastos na sua conta, nunca lê seus dados. Perdeu o celular? Cancele a chave no mesmo painel.'] },
+    itens: ['Em Contas, no painel “Lançar pelo celular”, toque em “Criar chave”.', 'Toque em “Copiar chave e instalar o atalho”, depois em “Adicionar Atalho”, e cole a chave quando o iPhone pedir.', 'Dica: em Ajustes › Acessibilidade › Toque › Toque Atrás, escolha o Gastei para abrir com três toques na maçã, atrás do iPhone.', 'A chave só inclui gastos na sua conta, nunca lê seus dados. Perdeu o celular? Cancele a chave no mesmo painel.'] },
   { pagina: 'assistente', icone: '✦', titulo: '6. Veja o relatório e peça ajuda',
     texto: 'No Assistente, o relatório do mês mostra entradas, saídas por categoria, maiores gastos e se o dinheiro dá até o fim do mês.',
     itens: ['“Analisar este mês com IA” faz um resumo com sugestões de onde economizar.', 'Você também pode perguntar, por exemplo: “Quanto gastei com mercado este mês?”.', 'Ele usa inteligência artificial e pode errar: confira antes de decidir.'] },
@@ -329,6 +329,8 @@ function deveMostrarTutorial(metadados, vistoNoAparelho) {
    Cada aviso aparece uma única vez por pessoa (fica marcado no perfil dela e no aparelho).
    Quem entra pela primeira vez vê o guia e não recebe os avisos antigos. */
 const NOVIDADES = [
+  { id: 'toque-atras', versao: '0.14.2', icone: '⚡', titulo: 'Lance com três toques atrás do iPhone',
+    texto: 'Em Ajustes › Acessibilidade › Toque › Toque Atrás, escolha Toque Triplo e o atalho Gastei. A dica também está em Contas › Lançar pelo celular.' },
   { id: 'instalar-atalho', versao: '0.14.1', icone: '⚡', titulo: 'Atalho do iPhone em 3 toques',
     texto: 'Em Contas › Lançar pelo celular, crie sua chave e toque em “Copiar chave e instalar o atalho”. O iPhone instala o atalho Gastei pronto.' },
   { id: 'lancar-pelo-celular', versao: '0.14.0', icone: '⚡', titulo: 'Agora dá para lançar gastos pelo celular',

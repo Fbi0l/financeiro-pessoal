@@ -262,6 +262,7 @@ button:disabled{opacity:.55;cursor:progress}
 /* Lançar pelo celular */
 .atalho-passos{margin:0 0 12px;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.5}
 .atalho-instalar{width:100%;margin:4px 0 10px}
+.atalho-dica{font-size:13px;line-height:1.5;margin:0 0 12px}
 .atalho-novo{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .atalho-novo input{flex:1 1 220px;min-width:0;padding:10px 12px;border:1px solid var(--field-line);border-radius:10px;background:var(--field);color:inherit;font-size:15px}
 .atalho-guia{margin-top:14px;border:1px solid var(--line);border-radius:12px}

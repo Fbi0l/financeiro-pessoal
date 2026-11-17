@@ -2,6 +2,10 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.14.2 — Gastei com toques na maçã
+
+- Dica no painel **Lançar pelo celular** e no tutorial: em *Ajustes › Acessibilidade › Toque › Toque Atrás*, escolher **Toque Triplo** e o atalho **Gastei** para abrir com três toques na traseira do iPhone (iPhone 8 ou mais novo).
+
 ## Versão 0.14.1 — Atalho do iPhone em 3 toques
 
 - No painel **Lançar pelo celular**, depois de criar a chave, o botão **"Copiar chave e instalar o atalho"** copia a chave e abre o atalho **Gastei** pronto (link do iCloud). O iPhone pede a chave na instalação: ela não vai no link, cada pessoa usa a sua.

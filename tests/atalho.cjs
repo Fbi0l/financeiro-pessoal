@@ -44,4 +44,5 @@ assert.ok(app.includes("$('atalhoInstalar').addEventListener('click', instalarAt
 const corpo = app.slice(app.indexOf('async function instalarAtalho'), app.indexOf('async function copiarCampo'));
 assert.ok(corpo.indexOf('clipboard.writeText') < corpo.indexOf('location.href'), 'copia antes de abrir o link');
 assert.ok(passo.itens.some(i => /Adicionar Atalho/.test(i)), 'tutorial explica a instalacao');
+assert.ok(passo.itens.some(i => /Toque Atrás/.test(i)) && html.includes('Toque Atrás'), 'dica do Toque Atras no tutorial e no painel');
 console.log('Lancar pelo celular aprovado: tela, guia, tutorial e funcoes do banco.');
