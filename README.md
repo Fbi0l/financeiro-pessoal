@@ -2,6 +2,14 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.12.0 — Ajuste de saldo visível
+
+- **Acertar o saldo não mexe mais no saldo inicial escondido.** Ao editar uma conta e digitar o saldo que aparece no app do banco, o Financeiro lança um **"Ajuste de saldo"** com a diferença (saída ou entrada, com data de hoje, em "Outras despesas" ou "Outras receitas"). Ele aparece na lista de lançamentos e pode ser editado ou excluído como qualquer outro.
+- Antes de lançar, uma janela mostra o saldo do app, o saldo informado e o valor do ajuste, e lembra que, se você souber o que faltou (um gasto ou Pix), é melhor lançar ele.
+- A janela da conta mostra o **saldo inicial** atual, para conferência.
+- Por quê: o recálculo escondido do saldo inicial fazia os saldos de cada conta deixarem de contar a história certa (ex.: transferência entre contas não lançada virava um saldo inicial negativo, sem data nem rastro).
+- Conta nova continua igual: o saldo informado é o ponto de partida.
+
 ## Versão 0.11.0 — Modo escuro e avisos de novidade
 
 - **Modo escuro**: o botão **☾** no topo da tela alterna entre claro e escuro (no escuro ele vira **☀**). A escolha fica salva no aparelho. Enquanto a pessoa não escolher, o app segue o tema do celular ou computador e acompanha quando ele muda.
@@ -63,7 +71,7 @@ O campo "Para quem?" do painel de convites voltou a aceitar digitação no iPhon
 ## Versão 0.6.0 — Contas e categorias editáveis
 
 - **Contas:** criar, editar (nome, tipo, cor), arquivar, desarquivar e excluir (só sem lançamentos; as outras podem ser arquivadas).
-- **Saldo de hoje no banco:** ao editar uma conta, digite o saldo que aparece no app do banco. O Financeiro recalcula o **saldo inicial** para bater, sem mexer em nenhum lançamento. Aceita zero e saldo negativo.
+- **Saldo de hoje no banco:** ao editar uma conta, digite o saldo que aparece no app do banco. O Financeiro recalcula o **saldo inicial** para bater, sem mexer em nenhum lançamento. Aceita zero e saldo negativo. *(A partir da 0.12.0, a diferença vira um lançamento "Ajuste de saldo".)*
 - **Categorias:** criar (de saída ou de entrada), renomear, trocar a cor, arquivar e excluir (só sem lançamentos). O tipo de uma categoria existente não muda, por causa da regra do banco que liga a categoria ao tipo do lançamento.
 - Categorias arquivadas somem dos formulários e da importação, mas lançamentos antigos continuam mostrando e podem manter a categoria ao serem editados.
 - Mensagens claras para nome repetido e para exclusão de item em uso. A confirmação de exclusão virou uma janela única, reaproveitada em todo o app.

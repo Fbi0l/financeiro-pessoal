@@ -168,10 +168,21 @@ function lerSaldo(texto) {
   const v = lerValor(corpo);
   return v == null ? null : (negativo ? -v : v);
 }
-/** Saldo inicial que faz o saldo de hoje bater com o banco: hoje − (efeito dos lançamentos já registrados). */
-function saldoInicialPara(saldoHoje, saldoAtual, saldoInicial) {
-  const movimentos = paraCentavos(saldoAtual) - paraCentavos(saldoInicial);
-  return (paraCentavos(saldoHoje) - movimentos) / 100;
+/** Lançamento "Ajuste de saldo" que leva a conta do saldo do app (saldoAtual) ao saldo do banco (saldoHoje).
+    A diferença fica visível na lista, com data, em vez de mudar o saldo inicial escondido.
+    Devolve null quando não há diferença. Usa "Outras despesas"/"Outras receitas" se existirem e estiverem ativas. */
+function ajusteDeSaldo(saldoHoje, saldoAtual, contaId, categorias, data) {
+  const dif = paraCentavos(saldoHoje) - paraCentavos(saldoAtual);
+  if (!dif) return null;
+  const tipo = dif > 0 ? 'receita' : 'despesa';
+  const nomeCat = tipo === 'receita' ? 'outras receitas' : 'outras despesas';
+  const simples = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
+  const cat = (categorias || []).find(c => c.tipo === tipo && !c.arquivada && simples(c.nome) === nomeCat);
+  return {
+    tipo, descricao: 'Ajuste de saldo', valor: Math.abs(dif) / 100, data,
+    conta_id: contaId, conta_destino_id: null, categoria_id: cat ? cat.id : null, pago: true,
+    observacoes: `Saldo no app: ${formatarMoeda(saldoAtual)}. Saldo informado do banco: ${formatarMoeda(saldoHoje)}.`
+  };
 }
 function validarConta(c) {
   const nome = String(c.nome || '').trim();
@@ -266,6 +277,8 @@ function deveMostrarTutorial(metadados, vistoNoAparelho) {
    Cada aviso aparece uma única vez por pessoa (fica marcado no perfil dela e no aparelho).
    Quem entra pela primeira vez vê o guia e não recebe os avisos antigos. */
 const NOVIDADES = [
+  { id: 'ajuste-de-saldo', versao: '0.12.0', icone: '⚖', titulo: 'Acerto de saldo agora aparece na lista',
+    texto: 'Ao acertar o saldo de uma conta com o do banco, a diferença vira um lançamento “Ajuste de saldo”, com data. Assim você vê o que faltou lançar e pode corrigir depois.' },
   { id: 'modo-escuro', versao: '0.11.0', icone: '☾', titulo: 'Agora temos o modo escuro',
     texto: 'Toque em ☾ no topo da tela para alternar entre claro e escuro. Enquanto você não escolher, o app segue o tema do seu aparelho.',
     acao: { tipo: 'tema-escuro', rotulo: 'Experimentar' } }
@@ -285,7 +298,7 @@ function juntarVistas(lista, ...grupos) {
 if (typeof module !== 'undefined') {
   module.exports = {
     PASSOS_TUTORIAL, deveMostrarTutorial, NOVIDADES, novidadesPendentes, juntarVistas,
-    textoSimples, codigoDoLink, linkConvite, expirouPorInatividade, INATIVIDADE_MS, CORES, lerSaldo, saldoInicialPara, validarConta, validarCategoria, mensagemErroCadastro,
+    textoSimples, codigoDoLink, linkConvite, expirouPorInatividade, INATIVIDADE_MS, CORES, lerSaldo, ajusteDeSaldo, validarConta, validarCategoria, mensagemErroCadastro,
     formatarMoeda, somarSaldos, corSegura, rotuloTipoConta, mensagemErroLogin, lerValor, valorParaCampo,
     hojeISO, intervaloMes, somarMes, rotuloMes, dataValida, rotuloDia, validarLancamento, montarRegistro,
     totaisLancamentos, agruparPorDia, filtrarLancamentos, mensagemErroBanco
@@ -621,7 +634,7 @@ function iniciar() {
     $('contaSaldoHoje').value = valorParaCampo(c ? Number(c.saldo_atual) : 0);
     $('contaSaldoHoje').dataset.original = $('contaSaldoHoje').value;
     $('contaSaldoAjuda').textContent = c
-      ? 'Se o saldo no app do banco estiver diferente, digite o valor de lá. O Financeiro recalcula o saldo inicial para bater, sem mexer nos lançamentos. Use "-" para saldo negativo.'
+      ? `Saldo inicial da conta: ${formatarMoeda(c.saldo_inicial)}. Se o saldo no app do banco estiver diferente, digite o valor de lá: o Financeiro lança um "Ajuste de saldo" com a diferença, com data de hoje, que aparece na lista e pode ser editado ou excluído. Use "-" para saldo negativo.`
       : 'Informe o saldo que aparece agora no app do banco (pode ser 0). Use "-" para saldo negativo.';
     desenharCores($('contaCores'), 'contaCor', c?.cor || CORES[estado.contas.length % CORES.length]);
     $('contaExcluir').classList.toggle('hidden', !c);
@@ -638,20 +651,26 @@ function iniciar() {
     const saldoDigitado = lerSaldo($('contaSaldoHoje').value);
     if (saldoDigitado == null) { aviso('contaMensagem', 'Informe um saldo válido, como 1.234,56, 0 ou -50,00.'); return; }
     const mudouSaldo = !c || $('contaSaldoHoje').value !== $('contaSaldoHoje').dataset.original;
-    const saldoInicial = !c ? saldoDigitado : mudouSaldo ? saldoInicialPara(saldoDigitado, c.saldo_atual, c.saldo_inicial) : Number(c.saldo_inicial);
+    // Conta nova: o saldo informado é o ponto de partida. Conta existente: o saldo inicial não muda;
+    // a diferença vira um lançamento visível de "Ajuste de saldo".
+    const saldoInicial = c ? Number(c.saldo_inicial) : saldoDigitado;
+    const ajuste = c && mudouSaldo ? ajusteDeSaldo(saldoDigitado, c.saldo_atual, c.id, estado.categorias, hojeISO()) : null;
     const registro = { nome: $('contaNome').value.trim(), tipo: $('contaTipo').value, cor: corEscolhida('contaCor'), saldo_inicial: saldoInicial };
     const erro = validarConta(registro);
     if (erro) { aviso('contaMensagem', erro); return; }
+    if (ajuste && !(await confirmar({ titulo: 'Lançar ajuste de saldo?', botao: 'Lançar ajuste',
+      texto: `O app mostra ${formatarMoeda(c.saldo_atual)} e você informou ${formatarMoeda(saldoDigitado)}. Vou lançar um “Ajuste de saldo” de ${ajuste.tipo === 'despesa' ? 'saída' : 'entrada'} de ${formatarMoeda(ajuste.valor)} com data de hoje. Se você sabe o que causou a diferença (um gasto ou Pix que faltou lançar), cancele e lance ele: o saldo acerta sozinho.` }))) return;
     cad.salvando = true; $('contaSalvar').disabled = true;
     aviso('contaMensagem', 'Salvando…', true);
     const { error } = c
       ? await db.from('contas').update(registro).eq('id', c.id)
       : await db.from('contas').insert(registro);
+    const erroAjuste = !error && ajuste ? (await db.from('lancamentos').insert(ajuste)).error : null;
     cad.salvando = false; $('contaSalvar').disabled = false;
-    if (error) { aviso('contaMensagem', mensagemErroCadastro(error, 'conta')); return; }
+    if (error || erroAjuste) { aviso('contaMensagem', error ? mensagemErroCadastro(error, 'conta') : 'A conta foi salva, mas o ajuste de saldo não foi lançado: ' + mensagemErroBanco(erroAjuste)); return; }
     $('contaDialog').close();
     await carregarDados();
-    aviso('globalMessage', c ? (mudouSaldo ? `Conta atualizada. Saldo de hoje: ${formatarMoeda(saldoDigitado)}.` : 'Conta atualizada.') : 'Conta criada.', true);
+    aviso('globalMessage', c ? (ajuste ? `Conta atualizada. Ajuste de saldo lançado: saldo de hoje ${formatarMoeda(saldoDigitado)}.` : 'Conta atualizada.') : 'Conta criada.', true);
   }
   async function arquivarConta() {
     const c = cad.conta; if (!c) return;

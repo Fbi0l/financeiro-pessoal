@@ -9,7 +9,7 @@
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#1e2547">
   <!-- Tema claro/escuro: carrega antes de tudo (sem defer) para a tela nao piscar em branco. -->
-  <script src="tema.js?v=0.11.0"></script>
+  <script src="tema.js?v=0.12.0"></script>
   <title>Financeiro</title>
   <link rel="icon" href="assets/icone.svg" type="image/svg+xml">
   <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
@@ -20,10 +20,10 @@
   <meta name="apple-mobile-web-app-title" content="Financeiro">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="application-name" content="Financeiro">
-  <link rel="stylesheet" href="styles.css?v=0.11.0">
+  <link rel="stylesheet" href="styles.css?v=0.12.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-  <script src="importar.js?v=0.11.0" defer></script>
-  <script src="app.js?v=0.11.0" defer></script>
+  <script src="importar.js?v=0.12.0" defer></script>
+  <script src="app.js?v=0.12.0" defer></script>
 </head>
 <body>
   <div id="bootView" class="boot" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Carregando…</span></div>
@@ -39,7 +39,7 @@
       <p id="loginMessage" class="message" role="alert" aria-live="assertive"></p>
       <small>Acesso restrito ao titular. Não há cadastro aberto.</small>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.11.0</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.12.0</footer>
   </div>
 
   <div id="conviteView" class="login-wrap hidden">
@@ -57,7 +57,7 @@
       <p id="conviteMensagem" class="message" role="alert" aria-live="assertive"></p>
       <button id="conviteIrLogin" class="secondary full hidden" type="button">Ir para o login</button>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.11.0</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.12.0</footer>
   </div>
 
   <div id="appView" class="app hidden">
@@ -72,7 +72,7 @@
       </nav>
       <div class="sidebar-bottom">
         <span id="userEmail" class="user-email"></span>
-        <small class="versao-app">Versão 0.11.0</small>
+        <small class="versao-app">Versão 0.12.0</small>
         <button id="logoutBtn" class="nav-item" type="button" aria-label="Sair" title="Sair"><span class="nav-ico" aria-hidden="true">↪</span><span>Sair</span></button>
       </div>
     </aside>
@@ -257,7 +257,7 @@
         <details id="catArquivadasBox" class="panel arquivadas hidden"><summary>Categorias arquivadas <span id="catArqQtd" class="badge"></span></summary><ul id="catArquivadas" class="chips"></ul></details>
         <p class="muted ag-aviso">Toque numa categoria para renomear, trocar a cor, arquivar ou excluir.</p>
       </section>
-      <footer class="app-footer">© 2026 Fbiol · Versão 0.11.0</footer>
+      <footer class="app-footer">© 2026 Fbiol · Versão 0.12.0</footer>
     </main>
   </div>
 
@@ -299,7 +299,7 @@
       <fieldset class="saldo-box">
         <legend>Saldo</legend>
         <label>Saldo de hoje no banco (R$)<input id="contaSaldoHoje" inputmode="decimal" autocomplete="off" placeholder="0,00" maxlength="18"></label>
-        <small id="contaSaldoAjuda" class="muted">Informe o saldo que aparece agora no app do banco. O Financeiro calcula o saldo inicial para os números baterem com os lançamentos já registrados. Use "-" para saldo negativo.</small>
+        <small id="contaSaldoAjuda" class="muted">Informe o saldo que aparece agora no app do banco (pode ser 0). Use "-" para saldo negativo.</small>
       </fieldset>
       <div class="cores-campo"><span class="cores-rotulo">Cor</span><div id="contaCores" class="cores" role="radiogroup" aria-label="Cor da conta"></div></div>
       <p id="contaMensagem" class="message" role="alert"></p>
