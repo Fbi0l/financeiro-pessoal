@@ -307,9 +307,12 @@ const PASSOS_TUTORIAL = [
   { pagina: 'lancamentos', icone: '⇪', titulo: '4. Importe o extrato do banco',
     texto: 'Em vez de digitar tudo, baixe o extrato no app ou site do banco (arquivo OFX ou CSV) e toque em “Importar extrato”.',
     itens: ['Você confere a lista e as categorias sugeridas antes de gravar.', 'Importar o mesmo arquivo de novo não duplica nada.', 'Importou na conta errada? Em “Importações recentes”, apague a importação inteira.'] },
-  { pagina: 'assistente', icone: '✦', titulo: '5. Peça ajuda ao assistente',
-    texto: 'O assistente lê seus lançamentos e ajuda a entender o mês.',
-    itens: ['“Analisar este mês” faz um resumo com sugestões de onde economizar.', 'Você também pode perguntar, por exemplo: “Quanto gastei com mercado este mês?”.', 'Ele usa inteligência artificial e pode errar: confira antes de decidir.'] },
+  { pagina: 'contas', icone: '⚡', titulo: '5. Lance pelo celular',
+    texto: 'Gastou? Registre em segundos sem abrir o app, pelo Atalho do iPhone. Pagando por aproximação com o cartão na Carteira, o gasto pode entrar sozinho.',
+    itens: ['Em Contas, no painel “Lançar pelo celular”, toque em “Criar chave” e copie a chave.', 'Abra “Como configurar no iPhone” e siga os passos para montar o atalho “Gastei” e a automação da Carteira.', 'A chave só inclui gastos na sua conta, nunca lê seus dados. Perdeu o celular? Cancele a chave no mesmo painel.'] },
+  { pagina: 'assistente', icone: '✦', titulo: '6. Veja o relatório e peça ajuda',
+    texto: 'No Assistente, o relatório do mês mostra entradas, saídas por categoria, maiores gastos e se o dinheiro dá até o fim do mês.',
+    itens: ['“Analisar este mês com IA” faz um resumo com sugestões de onde economizar.', 'Você também pode perguntar, por exemplo: “Quanto gastei com mercado este mês?”.', 'Ele usa inteligência artificial e pode errar: confira antes de decidir.'] },
   { pagina: 'inicio', icone: '✓', titulo: 'Pronto para começar',
     texto: 'No Início você vê o saldo total e o resumo do mês.',
     itens: ['Instale o app no celular ou no computador para abrir com um toque, como um aplicativo.', 'Por segurança, o app sai sozinho depois de 30 minutos sem uso.', 'Prefere a tela escura? Toque em ☾ no topo para ligar o modo escuro.', 'Para rever este guia, toque em “?” no topo da tela.'] }
@@ -324,6 +327,8 @@ function deveMostrarTutorial(metadados, vistoNoAparelho) {
    Cada aviso aparece uma única vez por pessoa (fica marcado no perfil dela e no aparelho).
    Quem entra pela primeira vez vê o guia e não recebe os avisos antigos. */
 const NOVIDADES = [
+  { id: 'lancar-pelo-celular', versao: '0.14.0', icone: '⚡', titulo: 'Agora dá para lançar gastos pelo celular',
+    texto: 'Em Contas, no painel “Lançar pelo celular”, crie sua chave e siga o passo a passo para lançar com o Atalho do iPhone, sem abrir o app.' },
   { id: 'relatorio-assistente', versao: '0.13.0', icone: '▤', titulo: 'Relatório do mês no Assistente',
     texto: 'Abra o Assistente para ver entradas, saídas por categoria, maiores gastos e se o dinheiro dá até o fim do mês. É calculado no seu aparelho, sem IA.' },
   { id: 'ajuste-de-saldo', versao: '0.12.0', icone: '⚖', titulo: 'Acerto de saldo agora aparece na lista',
@@ -403,6 +408,7 @@ function iniciar() {
     if (location.hash !== '#' + pagina) history.replaceState(null, '', '#' + pagina);
     if (pagina === 'importar') { preencherContasImportacao(); carregarImportacoes(); }
     if (pagina === 'assistente') carregarRelatorio();
+    if (pagina === 'contas') carregarChavesAtalho();
   }
 
   /* ----- Contas, categorias e Início ----- */
@@ -1231,6 +1237,52 @@ function iniciar() {
   /* ----- Convites: painel do administrador ----- */
   const SITUACAO_CONVITE = { pendente: ['Aguardando', 'tag'], usado: ['Usado', 'tag tag-ok'], cancelado: ['Cancelado', 'tag tag-off'], vencido: ['Vencido', 'tag tag-off'], em_uso: ['Em uso agora', 'tag'] };
   const fmtDataHora = iso => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  /* ----- Lançar pelo celular (chaves do atalho) ----- */
+  async function carregarChavesAtalho() {
+    const { data, error } = await db.rpc('listar_chaves_atalho');
+    if (error) { aviso('atalhoMensagem', 'Não foi possível carregar as chaves.'); return; }
+    const itens = data.map(k => {
+      const li = el('li', 'list-item');
+      const info = el('div', 'list-info');
+      info.append(el('strong', null, k.apelido || 'Chave sem nome'));
+      info.append(el('small', null, `Criada em ${fmtDataHora(k.criada_em)} · ${k.ultimo_uso ? 'último uso ' + fmtDataHora(k.ultimo_uso) : 'ainda não usada'}`));
+      const b = el('button', 'ghost', 'Cancelar'); b.type = 'button';
+      b.addEventListener('click', async () => {
+        if (!(await confirmar({ titulo: 'Cancelar chave?', botao: 'Cancelar chave',
+          texto: `${k.apelido ? `A chave “${k.apelido}”` : 'Esta chave'} para de funcionar na hora. Os atalhos que usam ela vão precisar de uma chave nova.` }))) return;
+        const { error: e2 } = await db.rpc('cancelar_chave_atalho', { p_id: k.id });
+        aviso('atalhoMensagem', e2 ? mensagemErroBanco(e2) : 'Chave cancelada.', !e2);
+        $('atalhoGerada').classList.add('hidden');
+        carregarChavesAtalho();
+      });
+      li.append(info, b);
+      return li;
+    });
+    if (itens.length) $('atalhoLista').replaceChildren(...itens); else listaVazia($('atalhoLista'), 'Nenhuma chave ativa.');
+  }
+  async function criarChaveAtalho(ev) {
+    ev.preventDefault();
+    $('atalhoCriar').disabled = true;
+    aviso('atalhoMensagem', 'Criando…', true);
+    const { data, error } = await db.rpc('criar_chave_atalho', { p_apelido: $('atalhoApelido').value.trim() || null });
+    $('atalhoCriar').disabled = false;
+    if (error || !data?.[0]?.chave) {
+      const m = String(error?.message || '');
+      aviso('atalhoMensagem', /chaves ativas|caracteres/.test(m) ? m : mensagemErroBanco(error));
+      return;
+    }
+    $('atalhoChave').value = data[0].chave;
+    $('atalhoGerada').classList.remove('hidden');
+    $('atalhoApelido').value = '';
+    aviso('atalhoMensagem', '');
+    $('atalhoChave').select();
+    carregarChavesAtalho();
+  }
+  async function copiarCampo(id, msgId) {
+    try { await navigator.clipboard.writeText($(id).value); aviso(msgId, 'Copiado.', true); }
+    catch (_) { $(id).select(); aviso(msgId, 'Selecione o texto e copie.', true); }
+  }
+
   async function carregarConvites() {
     const { data: admin, error } = await db.rpc('sou_administrador');
     $('convitesPainel').classList.toggle('hidden', error || admin !== true);
@@ -1591,6 +1643,11 @@ function iniciar() {
   });
   ['conviteFechar', 'conviteCancelar'].forEach(id => $(id).addEventListener('click', () => $('conviteDialog').close()));
   $('conviteCopiar').addEventListener('click', copiarConvite);
+  $('atalhoForm').addEventListener('submit', criarChaveAtalho);
+  document.querySelectorAll('.atalho-copiar').forEach(b => b.addEventListener('click', () => copiarCampo(b.dataset.alvo, b.dataset.alvo === 'atalhoChave' ? 'atalhoMensagem' : 'atalhoGuiaMensagem')));
+  $('atalhoUrlLancar').value = SUPABASE_URL + '/rest/v1/rpc/atalho_lancar';
+  $('atalhoUrlContas').value = SUPABASE_URL + '/rest/v1/rpc/atalho_contas';
+  $('atalhoApikey').value = SUPABASE_KEY;
   $('conviteCompartilhar').addEventListener('click', () => navigator.share?.({ title: 'Convite para o Financeiro', text: 'Crie seu acesso ao Financeiro por este link (vale por 48 horas):', url: $('conviteLink').value }).catch(() => {}));
 
   db.auth.onAuthStateChange((evento, session) => {

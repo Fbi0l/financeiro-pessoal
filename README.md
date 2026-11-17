@@ -2,6 +2,16 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.14.0 — Lançar pelo celular
+
+- **Painel "Lançar pelo celular"** em Contas: cada pessoa cria a própria **chave** (aparece uma vez só, pode ter um nome como "meu iPhone") e cancela quando quiser. A lista mostra quando cada chave foi usada pela última vez.
+- **Atalho "Gastei" do iPhone**: pergunta conta, valor e descrição e grava sem abrir o app. **Automação da Carteira** (iOS 17+): ao pagar por aproximação, o gasto entra sozinho com o valor e o nome da loja. O passo a passo fica no próprio painel ("Como configurar no iPhone").
+- **Segurança**: o banco guarda só o hash da chave; com ela só dá para *incluir* lançamentos na conta do dono e ver os nomes das contas dele. Limite de 60 lançamentos por chave por dia, até 5 chaves ativas, toque repetido em 2 minutos não duplica. Funções `atalho_lancar` e `atalho_contas` (sem login, com a chave) e `criar_chave_atalho`, `listar_chaves_atalho`, `cancelar_chave_atalho` (logado). Tabela `privado.chaves_atalho`, fora da API.
+- **Categoria aprendida**: a do último lançamento com a mesma descrição, depois com a mesma primeira palavra; senão "Outras despesas"/"Outras receitas".
+- A função já aceita **entradas** (`p_tipo = 'receita'`), pronta para a automação do **Android** (próxima etapa).
+- **Tutorial** ganhou o passo "Lance pelo celular", e o passo do Assistente cita o relatório do mês.
+- Testes: `tests/atalho-db.sh` (banco, 41 verificações) e `tests/atalho.cjs` (tela, guia e tutorial).
+
 ## Versão 0.13.0 — Relatório do mês no Assistente
 
 - **Relatório do mês** no topo da página Assistente: entradas, saídas e resultado; pendências a pagar e a receber; **saídas por categoria** com barras e porcentagem; e os **5 maiores gastos**.

@@ -10,6 +10,7 @@ on:
       - 'tests/convites-db.sh'
       - 'tests/importacoes-db.sh'
       - 'tests/limite-ia-db.sh'
+      - 'tests/atalho-db.sh'
       - 'supabase/migrations/**'
       - '.github/workflows/teste-backup.yml'
   workflow_dispatch:
@@ -55,3 +56,4 @@ jobs:
           bash tests/convites-db.sh
           bash tests/importacoes-db.sh
           bash tests/limite-ia-db.sh
+          bash tests/atalho-db.sh

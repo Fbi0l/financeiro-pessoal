@@ -9,7 +9,7 @@
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#1e2547">
   <!-- Tema claro/escuro: carrega antes de tudo (sem defer) para a tela nao piscar em branco. -->
-  <script src="tema.js?v=0.13.0"></script>
+  <script src="tema.js?v=0.14.0"></script>
   <title>Financeiro</title>
   <link rel="icon" href="assets/icone.svg" type="image/svg+xml">
   <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
@@ -20,10 +20,10 @@
   <meta name="apple-mobile-web-app-title" content="Financeiro">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="application-name" content="Financeiro">
-  <link rel="stylesheet" href="styles.css?v=0.13.0">
+  <link rel="stylesheet" href="styles.css?v=0.14.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-  <script src="importar.js?v=0.13.0" defer></script>
-  <script src="app.js?v=0.13.0" defer></script>
+  <script src="importar.js?v=0.14.0" defer></script>
+  <script src="app.js?v=0.14.0" defer></script>
 </head>
 <body>
   <div id="bootView" class="boot" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Carregando…</span></div>
@@ -39,7 +39,7 @@
       <p id="loginMessage" class="message" role="alert" aria-live="assertive"></p>
       <small>Acesso restrito ao titular. Não há cadastro aberto.</small>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.13.0</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.14.0</footer>
   </div>
 
   <div id="conviteView" class="login-wrap hidden">
@@ -57,7 +57,7 @@
       <p id="conviteMensagem" class="message" role="alert" aria-live="assertive"></p>
       <button id="conviteIrLogin" class="secondary full hidden" type="button">Ir para o login</button>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.13.0</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.14.0</footer>
   </div>
 
   <div id="appView" class="app hidden">
@@ -72,7 +72,7 @@
       </nav>
       <div class="sidebar-bottom">
         <span id="userEmail" class="user-email"></span>
-        <small class="versao-app">Versão 0.13.0</small>
+        <small class="versao-app">Versão 0.14.0</small>
         <button id="logoutBtn" class="nav-item" type="button" aria-label="Sair" title="Sair"><span class="nav-ico" aria-hidden="true">↪</span><span>Sair</span></button>
       </div>
     </aside>
@@ -206,7 +206,7 @@
       <section id="assistentePage" class="page hidden">
         <div class="panel">
           <div class="panel-head">
-            <div><h2>Relatório do mês</h2><p class="muted panel-sub">Calculado dos seus lançamentos, aqui no aparelho. Para sugestões da IA, toque em “Analisar este mês”.</p></div>
+            <div><h2>Relatório do mês</h2><p class="muted panel-sub">Calculado dos seus lançamentos, aqui no aparelho. Para sugestões da IA, toque em “Analisar este mês com IA”.</p></div>
             <div class="month-nav" role="group" aria-label="Mês da análise">
               <button id="agMesAnterior" class="secondary icon-btn" type="button" aria-label="Mês anterior">‹</button>
               <strong id="agMesRotulo" class="month-label" aria-live="polite"></strong>
@@ -268,6 +268,51 @@
           <ul id="contasLista" class="list list-click"></ul>
         </div>
         <details id="contasArquivadasBox" class="panel arquivadas hidden"><summary>Contas arquivadas <span id="contasArqQtd" class="badge"></span></summary><ul id="contasArquivadas" class="list list-click"></ul></details>
+        <div id="atalhoPainel" class="panel">
+          <div class="panel-head"><div><h2>Lançar pelo celular</h2><p class="muted panel-sub">Registre gastos sem abrir o app, pelo Atalho do iPhone. A chave identifica você: com ela só dá para incluir lançamentos na sua conta, nunca ler seus dados.</p></div></div>
+          <form id="atalhoForm" class="atalho-novo">
+            <label class="sr-only" for="atalhoApelido">Nome do aparelho</label>
+            <input id="atalhoApelido" maxlength="40" autocomplete="off" placeholder="Nome do aparelho (ex.: meu iPhone)">
+            <button id="atalhoCriar" class="primary" type="submit">Criar chave</button>
+          </form>
+          <div id="atalhoGerada" class="convite-gerado hidden" role="status">
+            <p><strong>Chave criada.</strong> Copie agora e cole no Atalho: por segurança, ela não aparece de novo.</p>
+            <div class="convite-link"><input id="atalhoChave" readonly aria-label="Sua chave do atalho"><button class="secondary atalho-copiar" type="button" data-alvo="atalhoChave">Copiar</button></div>
+          </div>
+          <p id="atalhoMensagem" class="message" role="status" aria-live="polite"></p>
+          <ul id="atalhoLista" class="list convites-lista"></ul>
+          <details id="atalhoGuia" class="atalho-guia">
+            <summary>Como configurar no iPhone</summary>
+            <div class="atalho-guia-corpo">
+              <p class="muted">Você vai precisar de três informações. Toque em <strong>Copiar</strong> ao lado de cada uma quando o passo pedir.</p>
+              <div class="atalho-dados">
+                <label>Endereço para lançar<span class="convite-link"><input id="atalhoUrlLancar" readonly><button class="secondary atalho-copiar" type="button" data-alvo="atalhoUrlLancar">Copiar</button></span></label>
+                <label>Endereço das contas<span class="convite-link"><input id="atalhoUrlContas" readonly><button class="secondary atalho-copiar" type="button" data-alvo="atalhoUrlContas">Copiar</button></span></label>
+                <label>Chave pública do app (apikey)<span class="convite-link"><input id="atalhoApikey" readonly><button class="secondary atalho-copiar" type="button" data-alvo="atalhoApikey">Copiar</button></span></label>
+              </div>
+              <p id="atalhoGuiaMensagem" class="message" role="status" aria-live="polite"></p>
+              <h3>1. Atalho “Gastei” (Pix e qualquer pagamento)</h3>
+              <ol>
+                <li>Abra o app <strong>Atalhos</strong>, toque em <strong>+</strong> e dê o nome <strong>Gastei</strong>.</li>
+                <li>Adicione a ação <strong>Texto</strong> e cole nela a <strong>sua chave</strong> (a que você criou acima).</li>
+                <li>Adicione <strong>Obter Conteúdo do URL</strong>. Cole o <em>Endereço das contas</em>. Toque na seta e escolha: Método <strong>POST</strong>; em Cabeçalhos, adicione <strong>apikey</strong> com a <em>chave pública</em>; em Corpo da Solicitação, <strong>JSON</strong>, com o campo de texto <strong>p_chave</strong> = variável <strong>Texto</strong>.</li>
+                <li>Adicione <strong>Escolher da Lista</strong> (a lista é o resultado do passo anterior) com a pergunta “Qual conta?”.</li>
+                <li>Adicione <strong>Pedir Entrada</strong> do tipo <strong>Número</strong>: “Quanto?”. Depois outro <strong>Pedir Entrada</strong> do tipo <strong>Texto</strong>: “Com o quê?”.</li>
+                <li>Adicione outro <strong>Obter Conteúdo do URL</strong>, agora com o <em>Endereço para lançar</em>, Método <strong>POST</strong>, o mesmo cabeçalho <strong>apikey</strong> e Corpo <strong>JSON</strong> com quatro campos de texto: <strong>p_chave</strong> = Texto, <strong>p_valor</strong> = resposta do “Quanto?”, <strong>p_descricao</strong> = resposta do “Com o quê?”, <strong>p_conta</strong> = Item Escolhido.</li>
+                <li>Adicione <strong>Mostrar Notificação</strong> com o resultado (Conteúdo do URL). Pronto: toque em compartilhar e escolha <strong>Adicionar à Tela de Início</strong>. Também funciona dizendo “E aí Siri, Gastei”.</li>
+              </ol>
+              <h3>2. Automático nas compras por aproximação (Carteira)</h3>
+              <ol>
+                <li>Precisa do <strong>iOS 17 ou mais novo</strong> e do cartão na Carteira do iPhone. Só funciona ao pagar aproximando o iPhone da maquininha (não em compras online).</li>
+                <li>No app Atalhos, vá em <strong>Automação</strong> › <strong>+</strong> › <strong>Transação</strong>. Escolha o cartão, marque <strong>Executar Imediatamente</strong> e toque em <strong>Próximo</strong> › <strong>Novo Atalho em Branco</strong>.</li>
+                <li>Adicione <strong>Texto</strong> com a sua chave e <strong>Obter Conteúdo do URL</strong> com o <em>Endereço para lançar</em>, Método POST, cabeçalho <strong>apikey</strong> e Corpo JSON: <strong>p_chave</strong> = Texto, <strong>p_valor</strong> = Entrada do Atalho › <strong>Valor</strong>, <strong>p_descricao</strong> = Entrada do Atalho › <strong>Comerciante</strong>, <strong>p_conta</strong> = o nome da conta do app em que esse cartão deve lançar (escreva igual aparece em Contas).</li>
+                <li>Adicione <strong>Mostrar Notificação</strong> com o resultado. Faça uma compra pequena para testar.</li>
+              </ol>
+              <p class="muted">A categoria é escolhida pelo que você já usou antes com a mesma descrição (ex.: “Uber” › Transporte); se não houver, vai para “Outras despesas”. O lançamento aparece na lista com a observação “Lançado pelo atalho do celular”. Depois, ao importar o extrato, o que já foi lançado pelo atalho aparece como “parecido” e não é gravado de novo.</p>
+              <p class="muted"><strong>Android:</strong> em breve, por automação das notificações do banco.</p>
+            </div>
+          </details>
+        </div>
       </section>
 
       <section id="categoriasPage" class="page hidden">
@@ -278,7 +323,7 @@
         <details id="catArquivadasBox" class="panel arquivadas hidden"><summary>Categorias arquivadas <span id="catArqQtd" class="badge"></span></summary><ul id="catArquivadas" class="chips"></ul></details>
         <p class="muted ag-aviso">Toque numa categoria para renomear, trocar a cor, arquivar ou excluir.</p>
       </section>
-      <footer class="app-footer">© 2026 Fbiol · Versão 0.13.0</footer>
+      <footer class="app-footer">© 2026 Fbiol · Versão 0.14.0</footer>
     </main>
   </div>
 
