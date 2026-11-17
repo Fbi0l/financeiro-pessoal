@@ -132,6 +132,53 @@ function totaisLancamentos(lista) {
   }
   return { entradas: ent / 100, saidas: sai / 100, resultado: (ent - sai) / 100, pendente: pend / 100 };
 }
+/** Relatório do mês, calculado no aparelho (sem IA): totais, saídas por categoria, maiores gastos e ritmo de gasto.
+    lancamentos: os do mês. saldoHoje: soma das contas ativas. hoje: 'AAAA-MM-DD' (o ritmo só vale para o mês em andamento). */
+function relatorioMes(lancamentos, categorias, { ano, mes, hoje, saldoHoje = 0 }) {
+  const cat = new Map((categorias || []).map(c => [c.id, c]));
+  let ent = 0, sai = 0, aPagar = 0, aReceber = 0, qtd = 0;
+  const porCat = new Map();
+  const gastos = [];
+  for (const l of lancamentos || []) {
+    if (l.tipo === 'transferencia') continue;
+    const v = paraCentavos(l.valor);
+    if (!l.pago) { if (l.tipo === 'despesa') aPagar += v; else aReceber += v; continue; }
+    if (l.tipo === 'receita') { ent += v; continue; }
+    sai += v; qtd++;
+    const c = cat.get(l.categoria_id);
+    const nome = c ? c.nome : 'Sem categoria';
+    const item = porCat.get(nome) || { nome, cor: c ? c.cor : null, centavos: 0, quantidade: 0 };
+    item.centavos += v; item.quantidade++;
+    porCat.set(nome, item);
+    gastos.push({ data: l.data, descricao: l.descricao, centavos: v, categoria: nome });
+  }
+  const categoriasOrdem = [...porCat.values()].sort((a, b) => b.centavos - a.centavos).map(x => ({
+    nome: x.nome, cor: x.cor, quantidade: x.quantidade, total: x.centavos / 100,
+    pct: sai ? Math.round(x.centavos / sai * 100) : 0
+  }));
+  const maiores = gastos.sort((a, b) => b.centavos - a.centavos || String(a.data).localeCompare(String(b.data))).slice(0, 5)
+    .map(g => ({ data: g.data, descricao: g.descricao, categoria: g.categoria, valor: g.centavos / 100 }));
+  const diasNoMes = new Date(Date.UTC(ano, mes, 0)).getUTCDate();
+  const emAndamento = !!hoje && hoje.slice(0, 7) === `${ano}-${doisDigitos(mes)}`;
+  let ritmo = null;
+  if (emAndamento) {
+    const dia = Number(hoje.slice(8, 10));
+    const restantes = diasNoMes - dia;
+    const mediaDia = Math.round(sai / dia);
+    const projecao = mediaDia * restantes;
+    const saldo = paraCentavos(saldoHoje) - aPagar + aReceber;
+    ritmo = {
+      dia, dias_restantes: restantes, media_dia: mediaDia / 100, projecao_restante: projecao / 100,
+      disponivel: saldo / 100, sobra_estimada: (saldo - projecao) / 100,
+      situacao: !restantes ? 'fim' : !sai ? 'sem-gastos' : projecao > saldo ? 'apertado' : 'ok'
+    };
+  }
+  return {
+    entradas: ent / 100, saidas: sai / 100, resultado: (ent - sai) / 100,
+    a_pagar: aPagar / 100, a_receber: aReceber / 100, quantidade_saidas: qtd,
+    categorias: categoriasOrdem, maiores, em_andamento: emAndamento, ritmo
+  };
+}
 function agruparPorDia(lista) {
   const grupos = new Map();
   for (const l of lista || []) { if (!grupos.has(l.data)) grupos.set(l.data, []); grupos.get(l.data).push(l); }
@@ -277,6 +324,8 @@ function deveMostrarTutorial(metadados, vistoNoAparelho) {
    Cada aviso aparece uma única vez por pessoa (fica marcado no perfil dela e no aparelho).
    Quem entra pela primeira vez vê o guia e não recebe os avisos antigos. */
 const NOVIDADES = [
+  { id: 'relatorio-assistente', versao: '0.13.0', icone: '▤', titulo: 'Relatório do mês no Assistente',
+    texto: 'Abra o Assistente para ver entradas, saídas por categoria, maiores gastos e se o dinheiro dá até o fim do mês. É calculado no seu aparelho, sem IA.' },
   { id: 'ajuste-de-saldo', versao: '0.12.0', icone: '⚖', titulo: 'Acerto de saldo agora aparece na lista',
     texto: 'Ao acertar o saldo de uma conta com o do banco, a diferença vira um lançamento “Ajuste de saldo”, com data. Assim você vê o que faltou lançar e pode corrigir depois.' },
   { id: 'modo-escuro', versao: '0.11.0', icone: '☾', titulo: 'Agora temos o modo escuro',
@@ -301,7 +350,7 @@ if (typeof module !== 'undefined') {
     textoSimples, codigoDoLink, linkConvite, expirouPorInatividade, INATIVIDADE_MS, CORES, lerSaldo, ajusteDeSaldo, validarConta, validarCategoria, mensagemErroCadastro,
     formatarMoeda, somarSaldos, corSegura, rotuloTipoConta, mensagemErroLogin, lerValor, valorParaCampo,
     hojeISO, intervaloMes, somarMes, rotuloMes, dataValida, rotuloDia, validarLancamento, montarRegistro,
-    totaisLancamentos, agruparPorDia, filtrarLancamentos, mensagemErroBanco
+    totaisLancamentos, relatorioMes, agruparPorDia, filtrarLancamentos, mensagemErroBanco
   };
 } else {
   iniciar();
@@ -317,7 +366,7 @@ function iniciar() {
     inicio: { titulo: 'Início', eyebrow: 'VISÃO GERAL' },
     lancamentos: { titulo: 'Lançamentos', eyebrow: 'ENTRADAS E SAÍDAS' },
     importar: { titulo: 'Importar extrato', eyebrow: 'LANÇAMENTOS', menu: 'lancamentos' },
-    assistente: { titulo: 'Assistente', eyebrow: 'ANÁLISE COM IA' },
+    assistente: { titulo: 'Assistente', eyebrow: 'RELATÓRIO E ANÁLISE' },
     contas: { titulo: 'Contas', eyebrow: 'ONDE ESTÁ O DINHEIRO' },
     categorias: { titulo: 'Categorias', eyebrow: 'ORGANIZAÇÃO' }
   };
@@ -353,6 +402,7 @@ function iniciar() {
     $('pageEyebrow').textContent = PAGINAS[pagina].eyebrow;
     if (location.hash !== '#' + pagina) history.replaceState(null, '', '#' + pagina);
     if (pagina === 'importar') { preencherContasImportacao(); carregarImportacoes(); }
+    if (pagina === 'assistente') carregarRelatorio();
   }
 
   /* ----- Contas, categorias e Início ----- */
@@ -522,7 +572,7 @@ function iniciar() {
       estado.categorias = catR.data.filter(c => !c.arquivada); // só as ativas aparecem nos formulários e na importação
       desenharBase();
       preencherContasImportacao();
-      await Promise.all([carregarResumoMes(), carregarLancamentos()]);
+      await Promise.all([carregarResumoMes(), carregarLancamentos(), $('assistentePage').classList.contains('hidden') ? null : carregarRelatorio()]);
       aviso('globalMessage', '');
     } catch (e) {
       console.error(e);
@@ -1020,6 +1070,73 @@ function iniciar() {
     if (d.economia_mensal_estimada) card.append(el('p', 'ag-economia', `Economia estimada: ${formatarMoeda(d.economia_mensal_estimada)} por mês`));
     return card;
   }
+  /* Relatório do mês (sem IA): calculado aqui, a partir dos lançamentos do mês escolhido. */
+  let relatorioPedido = 0;
+  async function carregarRelatorio() {
+    const pedido = ++relatorioPedido;
+    const { inicio, fim } = intervaloMes(ag.ano, ag.mes);
+    aviso('relMensagem', 'Montando o relatório…', true);
+    const { data, error } = await db.from('lancamentos').select('tipo,valor,pago,data,descricao,categoria_id')
+      .gte('data', inicio).lte('data', fim);
+    if (pedido !== relatorioPedido) return; // a pessoa já trocou de mês
+    if (error) { aviso('relMensagem', mensagemErroBanco(error)); return; }
+    aviso('relMensagem', '');
+    desenharRelatorio(relatorioMes(data, estado.todasCategorias || estado.categorias,
+      { ano: ag.ano, mes: ag.mes, hoje, saldoHoje: somarSaldos(estado.contas) }));
+  }
+  function desenharRelatorio(r) {
+    const vazio = !r.entradas && !r.saidas && !r.a_pagar && !r.a_receber;
+    $('relConteudo').classList.toggle('hidden', vazio);
+    $('relVazio').classList.toggle('hidden', !vazio);
+    if (vazio) return;
+    sinalValor($('relEntradas'), r.entradas);
+    $('relSaidas').textContent = formatarMoeda(r.saidas);
+    sinalValor($('relResultado'), r.resultado);
+    const pend = [];
+    if (r.a_pagar) pend.push(`${formatarMoeda(r.a_pagar)} a pagar`);
+    if (r.a_receber) pend.push(`${formatarMoeda(r.a_receber)} a receber`);
+    $('relPendente').textContent = pend.length ? 'Pendente: ' + pend.join(' · ') : '';
+
+    // Ritmo de gasto (só no mês em andamento)
+    const rit = r.ritmo, box = $('relRitmo');
+    box.classList.toggle('hidden', !rit || rit.situacao === 'fim' || rit.situacao === 'sem-gastos');
+    if (rit && !box.classList.contains('hidden')) {
+      const apertado = rit.situacao === 'apertado';
+      box.className = 'rel-ritmo ' + (apertado ? 'alerta' : 'ok');
+      $('relRitmoTitulo').textContent = apertado ? 'Atenção: o mês está apertado' : 'No ritmo atual, o dinheiro dá até o fim do mês';
+      $('relRitmoTexto').textContent =
+        `Você gasta em média ${formatarMoeda(rit.media_dia)} por dia. Nesse ritmo, os próximos ${rit.dias_restantes} ${rit.dias_restantes === 1 ? 'dia custaria' : 'dias custariam'} cerca de ${formatarMoeda(rit.projecao_restante)}` +
+        (apertado ? `, mais do que os ${formatarMoeda(rit.disponivel)} disponíveis (faltariam ${formatarMoeda(-rit.sobra_estimada)}).`
+                  : `, e sobrariam cerca de ${formatarMoeda(rit.sobra_estimada)} dos ${formatarMoeda(rit.disponivel)} disponíveis.`) +
+        ' A média inclui gastos que não se repetem, então é uma estimativa.';
+    }
+
+    // Saídas por categoria (barras)
+    $('relCategorias').replaceChildren(...r.categorias.map(c => {
+      const li = el('li', 'rel-cat');
+      const topo = el('div', 'rel-cat-topo');
+      const nome = el('span', 'rel-cat-nome'); nome.append(ponto(c.cor), el('span', null, c.nome));
+      topo.append(nome, el('span', 'rel-cat-valor', `${formatarMoeda(c.total)} · ${c.pct}%`));
+      const barra = el('div', 'rel-barra'); barra.setAttribute('aria-hidden', 'true');
+      const preench = el('span'); preench.style.setProperty('--w', Math.max(c.pct, 1) + '%'); preench.style.setProperty('--cor', corSegura(c.cor));
+      barra.append(preench);
+      li.append(topo, barra);
+      li.setAttribute('aria-label', `${c.nome}: ${formatarMoeda(c.total)}, ${c.pct}% das saídas, ${c.quantidade} ${c.quantidade === 1 ? 'lançamento' : 'lançamentos'}`);
+      return li;
+    }));
+    $('relQtdSaidas').textContent = `${r.quantidade_saidas} ${r.quantidade_saidas === 1 ? 'saída' : 'saídas'}`;
+
+    // Maiores gastos
+    $('relMaiores').replaceChildren(...r.maiores.map(g => {
+      const li = el('li', 'rel-gasto');
+      const info = el('div', 'rel-gasto-info');
+      info.append(el('strong', null, g.descricao), el('small', 'muted', `${rotuloDia(g.data, hoje)} · ${g.categoria}`));
+      li.append(info, el('span', 'money neg', formatarMoeda(-g.valor)));
+      return li;
+    }));
+    $('relMaioresBox').classList.toggle('hidden', !r.maiores.length);
+  }
+
   async function analisarMes() {
     if (ag.ocupado) return;
     ag.ocupado = true;
@@ -1423,8 +1540,8 @@ function iniciar() {
   $('catArquivar').addEventListener('click', arquivarCategoria);
   $('catExcluir').addEventListener('click', excluirCategoria);
   mostrarMesAgente();
-  $('agMesAnterior').addEventListener('click', () => { Object.assign(ag, somarMes(ag.ano, ag.mes, -1)); mostrarMesAgente(); $('agResultado').classList.add('hidden'); });
-  $('agMesSeguinte').addEventListener('click', () => { Object.assign(ag, somarMes(ag.ano, ag.mes, 1)); mostrarMesAgente(); $('agResultado').classList.add('hidden'); });
+  $('agMesAnterior').addEventListener('click', () => { Object.assign(ag, somarMes(ag.ano, ag.mes, -1)); mostrarMesAgente(); $('agResultado').classList.add('hidden'); carregarRelatorio(); });
+  $('agMesSeguinte').addEventListener('click', () => { Object.assign(ag, somarMes(ag.ano, ag.mes, 1)); mostrarMesAgente(); $('agResultado').classList.add('hidden'); carregarRelatorio(); });
   $('agAnalisar').addEventListener('click', analisarMes);
   $('agForm').addEventListener('submit', ev => { ev.preventDefault(); perguntar($('agPergunta').value); });
   $('agPergunta').addEventListener('keydown', ev => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); perguntar($('agPergunta').value); } });

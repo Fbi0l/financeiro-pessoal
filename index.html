@@ -9,7 +9,7 @@
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#1e2547">
   <!-- Tema claro/escuro: carrega antes de tudo (sem defer) para a tela nao piscar em branco. -->
-  <script src="tema.js?v=0.12.0"></script>
+  <script src="tema.js?v=0.13.0"></script>
   <title>Financeiro</title>
   <link rel="icon" href="assets/icone.svg" type="image/svg+xml">
   <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
@@ -20,10 +20,10 @@
   <meta name="apple-mobile-web-app-title" content="Financeiro">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="application-name" content="Financeiro">
-  <link rel="stylesheet" href="styles.css?v=0.12.0">
+  <link rel="stylesheet" href="styles.css?v=0.13.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-  <script src="importar.js?v=0.12.0" defer></script>
-  <script src="app.js?v=0.12.0" defer></script>
+  <script src="importar.js?v=0.13.0" defer></script>
+  <script src="app.js?v=0.13.0" defer></script>
 </head>
 <body>
   <div id="bootView" class="boot" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Carregando…</span></div>
@@ -39,7 +39,7 @@
       <p id="loginMessage" class="message" role="alert" aria-live="assertive"></p>
       <small>Acesso restrito ao titular. Não há cadastro aberto.</small>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.12.0</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.13.0</footer>
   </div>
 
   <div id="conviteView" class="login-wrap hidden">
@@ -57,7 +57,7 @@
       <p id="conviteMensagem" class="message" role="alert" aria-live="assertive"></p>
       <button id="conviteIrLogin" class="secondary full hidden" type="button">Ir para o login</button>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.12.0</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.13.0</footer>
   </div>
 
   <div id="appView" class="app hidden">
@@ -72,7 +72,7 @@
       </nav>
       <div class="sidebar-bottom">
         <span id="userEmail" class="user-email"></span>
-        <small class="versao-app">Versão 0.12.0</small>
+        <small class="versao-app">Versão 0.13.0</small>
         <button id="logoutBtn" class="nav-item" type="button" aria-label="Sair" title="Sair"><span class="nav-ico" aria-hidden="true">↪</span><span>Sair</span></button>
       </div>
     </aside>
@@ -206,14 +206,35 @@
       <section id="assistentePage" class="page hidden">
         <div class="panel">
           <div class="panel-head">
-            <div><h2>Análise do mês</h2><p class="muted panel-sub">Um resumo do seu mês com sugestões do que melhorar.</p></div>
+            <div><h2>Relatório do mês</h2><p class="muted panel-sub">Calculado dos seus lançamentos, aqui no aparelho. Para sugestões da IA, toque em “Analisar este mês”.</p></div>
             <div class="month-nav" role="group" aria-label="Mês da análise">
               <button id="agMesAnterior" class="secondary icon-btn" type="button" aria-label="Mês anterior">‹</button>
               <strong id="agMesRotulo" class="month-label" aria-live="polite"></strong>
               <button id="agMesSeguinte" class="secondary icon-btn" type="button" aria-label="Próximo mês">›</button>
             </div>
           </div>
-          <button id="agAnalisar" class="primary" type="button">✦ Analisar este mês</button>
+          <p id="relMensagem" class="message" role="status" aria-live="polite"></p>
+          <p id="relVazio" class="muted hidden">Nenhum lançamento neste mês.</p>
+          <div id="relConteudo" class="relatorio">
+            <div class="stats stats-sm" aria-label="Totais do mês">
+              <div class="stat"><span>Entradas</span><strong id="relEntradas" class="money">—</strong></div>
+              <div class="stat"><span>Saídas</span><strong id="relSaidas" class="money neg">—</strong></div>
+              <div class="stat"><span>Resultado</span><strong id="relResultado" class="money">—</strong><small id="relPendente" class="muted"></small></div>
+            </div>
+            <div id="relRitmo" class="rel-ritmo hidden" role="note">
+              <strong id="relRitmoTitulo"></strong>
+              <p id="relRitmoTexto"></p>
+            </div>
+            <div class="rel-bloco">
+              <h3>Saídas por categoria <span id="relQtdSaidas" class="badge"></span></h3>
+              <ul id="relCategorias" class="rel-cats"></ul>
+            </div>
+            <div id="relMaioresBox" class="rel-bloco">
+              <h3>Maiores gastos</h3>
+              <ul id="relMaiores" class="rel-gastos"></ul>
+            </div>
+          </div>
+          <button id="agAnalisar" class="primary rel-analisar" type="button">✦ Analisar este mês com IA</button>
           <p id="agMensagem" class="message" role="status" aria-live="polite"></p>
           <div id="agResultado" class="hidden">
             <p id="agResumo" class="ag-resumo"></p>
@@ -257,7 +278,7 @@
         <details id="catArquivadasBox" class="panel arquivadas hidden"><summary>Categorias arquivadas <span id="catArqQtd" class="badge"></span></summary><ul id="catArquivadas" class="chips"></ul></details>
         <p class="muted ag-aviso">Toque numa categoria para renomear, trocar a cor, arquivar ou excluir.</p>
       </section>
-      <footer class="app-footer">© 2026 Fbiol · Versão 0.12.0</footer>
+      <footer class="app-footer">© 2026 Fbiol · Versão 0.13.0</footer>
     </main>
   </div>
 

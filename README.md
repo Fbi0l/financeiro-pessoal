@@ -2,6 +2,13 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.13.0 — Relatório do mês no Assistente
+
+- **Relatório do mês** no topo da página Assistente: entradas, saídas e resultado; pendências a pagar e a receber; **saídas por categoria** com barras e porcentagem; e os **5 maiores gastos**.
+- **Ritmo de gasto** (só no mês em andamento): média gasta por dia e quanto custariam os dias que faltam nesse ritmo, comparado com o dinheiro disponível (saldo de hoje − a pagar + a receber). Aparece em verde quando dá, ou como "mês apertado" quando não dá.
+- É calculado **no próprio aparelho, sem IA**: aparece na hora, não usa o limite diário do assistente e não envia dados para fora. Acompanha as setas de mês. O botão "Analisar este mês com IA" continua embaixo, para sugestões.
+- Função `relatorioMes` testada em `tests/relatorio.cjs` (centavos exatos, transferências fora, pendentes separados, mês passado sem ritmo).
+
 ## Versão 0.12.0 — Ajuste de saldo visível
 
 - **Acertar o saldo não mexe mais no saldo inicial escondido.** Ao editar uma conta e digitar o saldo que aparece no app do banco, o Financeiro lança um **"Ajuste de saldo"** com a diferença (saída ou entrada, com data de hoje, em "Outras despesas" ou "Outras receitas"). Ele aparece na lista de lançamentos e pode ser editado ou excluído como qualquer outro.
