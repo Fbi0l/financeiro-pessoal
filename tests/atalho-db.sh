@@ -8,6 +8,8 @@ export PGSSLMODE=disable PGDATABASE=postgres
 q() { psql -v ON_ERROR_STOP=1 -qAt "$@"; }
 q -c "drop database if exists fin_atalho" -c "create database fin_atalho"
 q -d fin_atalho -f "$raiz/tests/supabase-simulado.sql"
+# Como no Supabase: funcoes novas do esquema public ganham EXECUTE para anon e authenticated (a migracao precisa tirar).
+q -d fin_atalho -c "alter default privileges in schema public grant execute on functions to anon, authenticated"
 for m in "$raiz"/supabase/migrations/*.sql; do q -d fin_atalho -f "$m"; done
 U1=00000000-0000-0000-0000-0000000000a1; U2=00000000-0000-0000-0000-0000000000b2
 q -d fin_atalho -c "insert into auth.users (id, email) values ('$U1','a@exemplo.com'), ('$U2','b@exemplo.com')"
@@ -24,6 +26,8 @@ r=$(sql "select count(*) from privado.chaves_atalho where chave_hash = '$K1'")
 [[ "$r" == 0 ]] && ok "chave em texto nao fica no banco" || erro "texto" "$r"
 r=$(como anon "" "select * from public.criar_chave_atalho()")
 [[ "$r" == *"permission denied"* ]] && ok "anonimo nao cria chave" || erro "anon cria" "$r"
+r=$(como anon "" "select count(*) from public.listar_chaves_atalho()")
+[[ "$r" == *"permission denied"* ]] && ok "anonimo nao lista chaves" || erro "anon lista" "$r"
 r=$(como authenticated "" "select * from public.criar_chave_atalho()")
 [[ "$r" == *"Entre no app"* ]] && ok "sem login nao cria" || erro "sem login" "$r"
 r=$(como authenticated "$U1" "select count(*) from privado.chaves_atalho")

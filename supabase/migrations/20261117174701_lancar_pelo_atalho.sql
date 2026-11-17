@@ -20,6 +20,8 @@ create table privado.chaves_atalho (
   uso_qtd integer not null default 0 check (uso_qtd >= 0)
 );
 create index chaves_atalho_usuario on privado.chaves_atalho (usuario_id);
+-- Proteção extra: regras de acesso ligadas (sem políticas, ninguém lê pela API; as funções abaixo são as donas).
+alter table privado.chaves_atalho enable row level security;
 
 /* ---------- Funções do dono (logado no app) ---------- */
 
@@ -191,5 +193,7 @@ end; $$;
 revoke all on function privado.dono_da_chave(text), privado.ler_valor_atalho(text) from public, anon, authenticated;
 revoke all on function public.criar_chave_atalho(text), public.listar_chaves_atalho(), public.cancelar_chave_atalho(uuid),
   public.atalho_contas(text), public.atalho_lancar(text, text, text, text, text) from public;
+-- O Supabase dá EXECUTE automático a anon/authenticated em funções novas do esquema public: tira de quem não deve ter.
+revoke all on function public.criar_chave_atalho(text), public.listar_chaves_atalho(), public.cancelar_chave_atalho(uuid) from anon;
 grant execute on function public.criar_chave_atalho(text), public.listar_chaves_atalho(), public.cancelar_chave_atalho(uuid) to authenticated;
 grant execute on function public.atalho_contas(text), public.atalho_lancar(text, text, text, text, text) to anon, authenticated;
