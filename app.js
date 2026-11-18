@@ -329,6 +329,8 @@ function deveMostrarTutorial(metadados, vistoNoAparelho) {
    Cada aviso aparece uma única vez por pessoa (fica marcado no perfil dela e no aparelho).
    Quem entra pela primeira vez vê o guia e não recebe os avisos antigos. */
 const NOVIDADES = [
+  { id: 'sobre-o-app', versao: '0.15.0', icone: 'ⓘ', titulo: 'Conheça o “Sobre o app”',
+    texto: 'No rodapé de qualquer tela (e no menu lateral, no computador), toque em “Sobre o app” para ler por que o Financeiro foi criado e como ele protege seus dados.' },
   { id: 'toque-atras', versao: '0.14.2', icone: '⚡', titulo: 'Lance com três toques atrás do iPhone',
     texto: 'Em Ajustes › Acessibilidade › Toque › Toque Atrás, escolha Toque Triplo e o atalho Gastei. A dica também está em Contas › Lançar pelo celular.' },
   { id: 'instalar-atalho', versao: '0.14.1', icone: '⚡', titulo: 'Atalho do iPhone em 3 toques',
@@ -1460,6 +1462,9 @@ function iniciar() {
     return true;
   }
   $('ajudaBtn').addEventListener('click', abrirTutorial);
+  // Sobre o app (0.15.0): texto fixo no index.html, aberto pelo rodapé e pelo menu lateral.
+  document.querySelectorAll('[data-sobre]').forEach(b => b.addEventListener('click', () => { const d = $('sobreDialog'); if (!d.open) d.showModal(); d.querySelector('.sobre').scrollTop = 0; }));
+  $('sobreFechar').addEventListener('click', () => $('sobreDialog').close());
   $('tutProximo').addEventListener('click', () => {
     if (tut.passo < PASSOS_TUTORIAL.length - 1) { tut.passo++; desenharPassoTutorial(); $('tutProximo').focus(); }
     else $('tutorialDialog').close();

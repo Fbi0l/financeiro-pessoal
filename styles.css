@@ -449,3 +449,15 @@ button:disabled{opacity:.55;cursor:progress}
 :root[data-tema="escuro"] .cor-amostra{box-shadow:inset 0 0 0 2px #00000033}
 :root[data-tema="escuro"] .novidade{box-shadow:none}
 :root[data-tema="escuro"] .stat,:root[data-tema="escuro"] .panel{border-color:var(--line)}
+/* Sobre o app (0.15.0) */
+.link-rodape{background:none;border:0;padding:0;min-height:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer}
+.link-rodape:hover{color:var(--ink)}
+.dialog-sobre{width:min(760px,calc(100vw - 24px))}
+.sobre{max-height:min(66vh,720px);overflow-y:auto;padding-right:6px;margin-top:10px;font-size:15px;line-height:1.65}
+.sobre h3{font-size:15px;text-transform:uppercase;letter-spacing:.03em;margin:22px 0 6px}
+.sobre h3:first-child{margin-top:4px}
+.sobre h4{font-size:15px;margin:16px 0 4px}
+.sobre p{margin:0 0 10px}
+.sobre .alineas{list-style:none;padding-left:0;margin:6px 0 12px;counter-reset:al}
+.sobre .alineas li{counter-increment:al;position:relative;padding-left:26px;margin:4px 0}
+.sobre .alineas li::before{content:counter(al,lower-alpha) ")";position:absolute;left:0}

@@ -9,7 +9,7 @@
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#1e2547">
   <!-- Tema claro/escuro: carrega antes de tudo (sem defer) para a tela nao piscar em branco. -->
-  <script src="tema.js?v=0.14.2"></script>
+  <script src="tema.js?v=0.15.0"></script>
   <title>Financeiro</title>
   <link rel="icon" href="assets/icone.svg" type="image/svg+xml">
   <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
@@ -20,10 +20,10 @@
   <meta name="apple-mobile-web-app-title" content="Financeiro">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="application-name" content="Financeiro">
-  <link rel="stylesheet" href="styles.css?v=0.14.2">
+  <link rel="stylesheet" href="styles.css?v=0.15.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-  <script src="importar.js?v=0.14.2" defer></script>
-  <script src="app.js?v=0.14.2" defer></script>
+  <script src="importar.js?v=0.15.0" defer></script>
+  <script src="app.js?v=0.15.0" defer></script>
 </head>
 <body>
   <div id="bootView" class="boot" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Carregando…</span></div>
@@ -39,7 +39,7 @@
       <p id="loginMessage" class="message" role="alert" aria-live="assertive"></p>
       <small>Acesso restrito ao titular. Não há cadastro aberto.</small>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.14.2</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.15.0 · <button class="link-rodape" type="button" data-sobre>Sobre o app</button></footer>
   </div>
 
   <div id="conviteView" class="login-wrap hidden">
@@ -57,7 +57,7 @@
       <p id="conviteMensagem" class="message" role="alert" aria-live="assertive"></p>
       <button id="conviteIrLogin" class="secondary full hidden" type="button">Ir para o login</button>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.14.2</footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.15.0 · <button class="link-rodape" type="button" data-sobre>Sobre o app</button></footer>
   </div>
 
   <div id="appView" class="app hidden">
@@ -72,7 +72,8 @@
       </nav>
       <div class="sidebar-bottom">
         <span id="userEmail" class="user-email"></span>
-        <small class="versao-app">Versão 0.14.2</small>
+        <small class="versao-app">Versão 0.15.0</small>
+        <button class="nav-item" type="button" data-sobre><span class="nav-ico" aria-hidden="true">ⓘ</span><span>Sobre o app</span></button>
         <button id="logoutBtn" class="nav-item" type="button" aria-label="Sair" title="Sair"><span class="nav-ico" aria-hidden="true">↪</span><span>Sair</span></button>
       </div>
     </aside>
@@ -332,7 +333,7 @@
         <details id="catArquivadasBox" class="panel arquivadas hidden"><summary>Categorias arquivadas <span id="catArqQtd" class="badge"></span></summary><ul id="catArquivadas" class="chips"></ul></details>
         <p class="muted ag-aviso">Toque numa categoria para renomear, trocar a cor, arquivar ou excluir.</p>
       </section>
-      <footer class="app-footer">© 2026 Fbiol · Versão 0.14.2</footer>
+      <footer class="app-footer">© 2026 Fbiol · Versão 0.15.0 · <button class="link-rodape" type="button" data-sobre>Sobre o app</button></footer>
     </main>
   </div>
 
@@ -450,6 +451,45 @@
         <button id="confirmNao" class="secondary" type="button">Cancelar</button>
         <button id="confirmSim" class="danger" type="button">Excluir</button>
       </div>
+    </div>
+  </dialog>
+  <dialog id="sobreDialog" class="dialog dialog-sobre" aria-labelledby="sobreTitulo">
+    <div class="dialog-form">
+      <h2 id="sobreTitulo">Sobre o app</h2>
+      <article class="sobre">
+        <h3>1 Introdução</h3>
+        <p>Este texto apresenta as razões que levaram ao desenvolvimento do Financeiro Pessoal, sistema para registrar, entender e controlar os próprios gastos. Ele descreve como o controle era feito antes, o que o sistema passou a oferecer e por que ele é útil.</p>
+        <p>O sistema foi pensado para uso pessoal, mas permite convidar outras pessoas, cada uma com as próprias contas e sem acesso às das demais. Funciona no navegador e pode ser instalado no celular e no computador. É atualizado em versões, indicadas no rodapé.</p>
+        <h3>2 Desenvolvimento</h3>
+        <h4>2.1 Como o controle era feito</h4>
+        <p>O dinheiro circula por várias contas e cartões, e cada banco tem o próprio aplicativo. Para saber quanto foi gasto no mês, e com o quê, era preciso abrir extrato por extrato e somar à mão.</p>
+        <p>Na prática, essa conta raramente era feita. Os gastos pequenos passavam despercebidos, não havia uma visão por categoria e ficava difícil prever, no meio do mês, se o dinheiro daria até o fim.</p>
+        <h4>2.2 Finalidade do sistema</h4>
+        <p>O Financeiro Pessoal foi criado para reunir todas as contas em um só lugar e mostrar para onde o dinheiro vai. Com isso, pretende-se:</p>
+        <ol class="alineas">
+          <li>registrar as entradas e saídas de todas as contas;</li>
+          <li>importar os extratos dos bancos sem digitar movimento por movimento;</li>
+          <li>organizar os gastos por categoria;</li>
+          <li>acompanhar o resultado do mês e o ritmo de gastos;</li>
+          <li>facilitar o registro de um gasto no momento em que ele acontece.</li>
+        </ol>
+        <h4>2.3 Funcionamento</h4>
+        <p>O acesso é feito com e-mail e senha, e as contas novas entram por convite. Cada pessoa cadastra as próprias contas e categorias e registra os lançamentos à mão ou importa o extrato do banco em arquivo OFX ou CSV, incluindo os formatos do Nubank e do PicPay. O arquivo é lido no próprio aparelho. Antes de gravar, o sistema mostra uma prévia, sugere a categoria de cada movimento com base no histórico e ignora o que já foi importado.</p>
+        <p>O relatório do mês mostra entradas, saídas e resultado, os valores a pagar e a receber, os gastos por categoria e os cinco maiores gastos. No mês em andamento, calcula também o ritmo de gasto: quanto se gasta por dia e se o dinheiro disponível cobre os dias que faltam.</p>
+        <p>Há ainda um assistente com inteligência artificial, que comenta o mês e responde perguntas como “quanto gastei com Uber em outubro?”. Os números são calculados pelo próprio sistema, e a IA apenas os interpreta, sem alterar nada. No iPhone, o atalho “Gastei” registra um gasto com poucos toques e, com a automação da Carteira, as compras por aproximação entram sozinhas.</p>
+        <h4>2.4 Benefícios</h4>
+        <p>O principal ganho é enxergar o mês inteiro de uma vez. Com todas as contas no mesmo lugar e os gastos separados por categoria, fica claro onde o dinheiro está sendo gasto.</p>
+        <p>O trabalho também diminui. A importação do extrato evita a digitação, a categoria é sugerida automaticamente e o atalho do celular permite lançar um gasto na hora, sem deixar para depois.</p>
+        <p>Por fim, o ritmo de gasto ajuda a decidir enquanto o mês ainda está em andamento. Em vez de descobrir no fim que o dinheiro não deu, dá para ajustar os gastos a tempo.</p>
+        <h4>2.5 Proteção dos dados financeiros</h4>
+        <p>Dados financeiros revelam muito sobre a vida de uma pessoa e estão protegidos pela Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018). No sistema, cada pessoa vê apenas os próprios lançamentos, regra aplicada no próprio banco de dados. Os extratos são lidos no aparelho, e a sessão se encerra após 30 minutos sem uso.</p>
+        <p>O assistente envia os dados necessários a um serviço de inteligência artificial, que declara não guardá-los nem usá-los para treinar modelos; o convite informa isso a quem se cadastra, e o uso é limitado a 40 consultas por dia por pessoa. A chave do atalho do iPhone fica guardada apenas de forma cifrada e só permite incluir lançamentos, com limite diário. Uma verificação semanal automática confere a segurança do site, e há uma rotina de backup diário criptografado.</p>
+        <h4>2.6 Custos</h4>
+        <p>O sistema foi desenvolvido internamente e usa serviços gratuitos para hospedar o site, o banco de dados e o assistente de inteligência artificial. Não há licença, mensalidade ou contrato com fornecedor.</p>
+        <h3>3 Considerações finais</h3>
+        <p>O Financeiro Pessoal substitui a soma manual de vários extratos por uma visão única e atualizada das finanças. Ele reduz o trabalho de registro, mostra para onde vai o dinheiro e ajuda a tomar decisões ainda durante o mês, mantendo os dados de cada pessoa separados e protegidos.</p>
+      </article>
+      <div class="dialog-actions"><span class="spacer"></span><button id="sobreFechar" class="primary" type="button">Fechar</button></div>
     </div>
   </dialog>
 </body>

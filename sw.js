@@ -4,9 +4,9 @@
    - NUNCA guarda nada do Supabase (login, lançamentos, IA): esses pedidos passam direto.
    - Rede primeiro: sempre que houver internet, usa a versão mais nova publicada. */
 'use strict';
-const VERSAO = 'financeiro-v0.14.2';
+const VERSAO = 'financeiro-v0.15.0';
 const ARQUIVOS = [
-  './', './index.html', './app.js?v=0.14.2', './importar.js?v=0.14.2', './tema.js?v=0.14.2', './styles.css?v=0.14.2',
+  './', './index.html', './app.js?v=0.15.0', './importar.js?v=0.15.0', './tema.js?v=0.15.0', './styles.css?v=0.15.0',
   './manifest.webmanifest', './assets/icone.svg', './assets/icone-192.png', './assets/icone-512.png', './assets/favicon-32.png',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js'
 ];
