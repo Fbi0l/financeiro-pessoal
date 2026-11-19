@@ -84,6 +84,45 @@ como anon "" "select public.automacao_lancar('$K2', 'receita', '9', 'x', 'Nubank
 r=$(sql "select count(*) from public.lancamentos where id_externo = 'email:m1'")
 [[ "$r" == 2 ]] && ok "mesmo codigo em pessoas diferentes nao se mistura" || erro "codigo por pessoa" "$r"
 
+# ---------- Linhas de EXTRATO ('b:...'): cada linha assume no máximo um lançamento igual ----------
+NU="(select id from public.contas where usuario_id='$U1' and nome='Nubank')"
+# Dois cafés de 9,20 no mesmo dia no banco; só um lançado à mão (com data errada, um dia depois).
+sql "insert into public.lancamentos (usuario_id, tipo, descricao, valor, data, conta_id) select '$U1','despesa','Passagem',9.20,'$HOJE',$NU"
+r=$(L "'despesa', '9,20', 'Pix - Sindicato', 'Nubank', '$ONTEM', 'b:x1'")
+[[ "$r" == "Conferido com o banco: R\$ 9,20 em Nubank ("*"data corrigida de "* ]] && ok "extrato assume o lancado a mao e corrige a data" || erro "assume" "$r"
+r=$(sql "select data||'|'||origem||'|'||id_externo||'|'||descricao from public.lancamentos where id_externo = 'b:x1'")
+[[ "$r" == "$ONTEM|importacao|b:x1|Passagem" ]] && ok "lancamento a mao vira conferido (descricao mantida)" || erro "conferido" "$r"
+r=$(L "'despesa', '9,20', 'Pix - Sindicato', 'Nubank', '$ONTEM', 'b:x2'")
+[[ "$r" == "Gasto lançado: R\$ 9,20"* ]] && ok "segunda linha igual vira lancamento novo" || erro "segunda" "$r"
+r=$(sql "select count(*) from public.lancamentos where valor = 9.20 and usuario_id = '$U1'")
+[[ "$r" == 2 ]] && ok "dois no banco = dois no app" || erro "contagem" "$r"
+r=$(L "'despesa', '9,20', 'Pix - Sindicato', 'Nubank', '$ONTEM', 'b:x2'")
+[[ "$r" == "Já registrado"* ]] && ok "mesma linha do extrato de novo nao duplica" || erro "repetido extrato" "$r"
+# Lançamento que veio de e-mail também é assumido pela linha do extrato (sem duplicar).
+L "'receita', '4,44', 'Reembolso 99', 'Nubank', '$HOJE', 'email:z1'" >/dev/null
+r=$(L "'receita', '4,44', 'Reembolso recebido 99', 'Nubank', '$HOJE', 'b:x3'")
+[[ "$r" == "Conferido com o banco"* ]] && ok "extrato assume o que veio do e-mail" || erro "email->extrato" "$r"
+r=$(sql "select count(*)||'|'||max(id_externo) from public.lancamentos where valor = 4.44")
+[[ "$r" == "1|b:x3" ]] && ok "continua um so, agora com o codigo do banco" || erro "email assumido" "$r"
+# Linha já conferida não é assumida por outra linha igual.
+r=$(L "'receita', '4,44', 'Reembolso recebido 99', 'Nubank', '$HOJE', 'b:x4'")
+[[ "$r" == "Entrada lançada"* ]] && ok "linha conferida nao e reaproveitada" || erro "reaproveitou" "$r"
+# Transferência do extrato assume a transferência lançada à mão.
+sql "insert into public.lancamentos (usuario_id, tipo, descricao, valor, data, conta_id, conta_destino_id) select '$U1','transferencia','PJ para Nubank',333,'$HOJE',(select id from public.contas where usuario_id='$U1' and nome='Nubank PJ'),$NU"
+r=$(L "'transferencia', '333', 'Pix para Fábio', 'Nubank PJ', '$HOJE', 'b:x5', 'Nubank'")
+[[ "$r" == "Conferido com o banco"* ]] && ok "extrato assume transferencia" || erro "transf extrato" "$r"
+# Saldo de uma conta no fim de um dia.
+r=$(como anon "" "select public.automacao_saldo('$K1', 'Nubank PJ', '$HOJE')")
+esperado=$(sql "select saldo_atual from public.saldos_contas where id = (select id from public.contas where usuario_id='$U1' and nome='Nubank PJ')")
+[[ "$r" == "$esperado" ]] && ok "saldo do dia igual ao saldo da conta ($r)" || erro "saldo" "$r vs $esperado"
+r=$(como anon "" "select public.automacao_saldo('$K1', 'Nubank PJ', '$HOJE'::date - 30)")
+[[ "$r" == "0.00" ]] && ok "saldo antes dos movimentos e o inicial" || erro "saldo antigo" "$r"
+r=$(como anon "" "select public.automacao_saldo('errada', 'Nubank', '$HOJE')")
+[[ "$r" == *"Chave inválida"* ]] && ok "saldo exige chave" || erro "saldo chave" "$r"
+K2b=$(como authenticated "$U2" "select chave from public.criar_chave_atalho()")
+r=$(como anon "" "select public.automacao_saldo('$K2b', 'Nubank PJ', '$HOJE')")
+[[ "$r" == *"não encontrada"* ]] && ok "saldo nao enxerga conta de outra pessoa" || erro "saldo isolamento" "$r"
+
 # Função interna fora da API; chave cancelada para de funcionar.
 r=$(como anon "" "select privado.categoria_aprendida('$U1','receita','x')")
 [[ "$r" == *"permission denied"* ]] && ok "funcao interna fora da API" || erro "interna" "$r"

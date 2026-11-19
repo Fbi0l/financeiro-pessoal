@@ -7,6 +7,14 @@ App para registrar, entender e controlar os próprios gastos. É um site estáti
 - **Sobre o app**, no rodapé de todas as telas (inclusive login e convite) e no menu lateral: explica por que o Financeiro foi criado, para que serve, como funciona, os benefícios e como os dados são protegidos, no padrão de numeração da ABNT. O texto é fixo e não usa dados do banco.
 - Aviso de novidade avisa onde encontrar.
 
+## Banco — importação automática do extrato pelo e-mail (19/11/2026)
+
+- `automacao_lancar` (migração `20261119193406_automacao_extrato`) entende linhas de **extrato** (`b:<Identificador>`, o mesmo código do importador do app): cada linha **assume no máximo um** lançamento igual ainda não conferido (à mão, Gastei ou e-mail; conta, tipo, valor, data ±1 dia), que ganha o código do banco, vira importado e fica com a **data do banco**. Dois gastos iguais no mesmo dia, um esquecido, resultam em dois. Limite de 300 lançamentos novos por dia para a automação.
+- `automacao_saldo`: saldo de uma conta no fim de um dia, para comparar com o "Saldo final do período" do PDF do extrato. A tarefa agendada avisa quando não bate.
+- A tarefa agendada (8h43, 16h43, 21h43) agora também importa os extratos que chegam por e-mail (Nubank e Nu Empresas): pula estornos e transferências recebidas da própria conta (a transferência é lançada pelo lado que envia).
+- Dados: "Camisas do ministério" (R$ 50, 05/11) virou 2 × R$ 25, como no banco.
+- Testes: `tests/automacao-db.sh` (35 verificações).
+
 ## Banco — lançamentos automáticos pelo e-mail do banco (19/11/2026)
 
 - Função `automacao_lancar` (migração `20261119151555_automacao_email`): entrada, saída ou **transferência** com a **data do movimento**; exige o código do e-mail (`email:<id>`), então o mesmo e-mail nunca entra duas vezes; se já existe um lançamento igual (conta, tipo, valor, data ±1 dia e destino), feito à mão, pelo Gastei ou pelo extrato, **não grava**. Categoria aprendida pela descrição (`privado.categoria_aprendida`).
