@@ -7,6 +7,12 @@ App para registrar, entender e controlar os próprios gastos. É um site estáti
 - **Sobre o app**, no rodapé de todas as telas (inclusive login e convite) e no menu lateral: explica por que o Financeiro foi criado, para que serve, como funciona, os benefícios e como os dados são protegidos, no padrão de numeração da ABNT. O texto é fixo e não usa dados do banco.
 - Aviso de novidade avisa onde encontrar.
 
+## Banco — lançamentos automáticos pelo e-mail do banco (19/11/2026)
+
+- Função `automacao_lancar` (migração `20261119151555_automacao_email`): entrada, saída ou **transferência** com a **data do movimento**; exige o código do e-mail (`email:<id>`), então o mesmo e-mail nunca entra duas vezes; se já existe um lançamento igual (conta, tipo, valor, data ±1 dia e destino), feito à mão, pelo Gastei ou pelo extrato, **não grava**. Categoria aprendida pela descrição (`privado.categoria_aprendida`).
+- Usada por uma **tarefa agendada** (3 vezes por dia) que lê no Gmail do dono os e-mails do Nubank de **reembolso** e **transferência** e lança no app. Usa a chave "Automação e-mail" (Contas › Lançar pelo celular), que pode ser cancelada ali.
+- Teste: `tests/automacao-db.sh` (22 verificações), também no "Teste do backup".
+
 ## Versão 0.14.2 — Gastei com toques na maçã
 
 - Dica no painel **Lançar pelo celular** e no tutorial: em *Ajustes › Acessibilidade › Toque › Toque Atrás*, escolher **Toque Triplo** e o atalho **Gastei** para abrir com três toques na traseira do iPhone (iPhone 8 ou mais novo).
