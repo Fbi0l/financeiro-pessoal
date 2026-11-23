@@ -2,6 +2,12 @@
 
 App para registrar, entender e controlar os próprios gastos. É um site estático (HTML, CSS e JavaScript, sem etapa de build) que usa o Supabase para banco de dados, login e regras de acesso. Funciona no computador e no celular.
 
+## Versão 0.15.1 — Atalho da Carteira: valor no lugar certo
+
+- Passo a passo da **compra por aproximação** (Contas › Lançar pelo celular): agora avisa para tocar na variável **Entrada do Atalho** e escolher **Valor** no campo do valor (e **Comerciante** na descrição). Sem isso o iPhone manda o nome da loja no lugar do valor.
+- Banco: quando o valor chega só com letras (ex.: "Mais Barato Grao"), o erro diz que parece o nome da loja e como corrigir no app Atalhos, em vez de só "Valor inválido". Migração `atalho_valor_nome_da_loja`.
+- Testes: `tests/atalho-db.sh` e `tests/atalho.cjs` cobrem o caso.
+
 ## Versão 0.15.0 — Sobre o app
 
 - **Sobre o app**, no rodapé de todas as telas (inclusive login e convite) e no menu lateral: explica por que o Financeiro foi criado, para que serve, como funciona, os benefícios e como os dados são protegidos, no padrão de numeração da ABNT. O texto é fixo e não usa dados do banco.

@@ -48,10 +48,17 @@ for par in "12,50:12.50" "12.5:12.50" "7:7.00" "1.234:1234.00" "-9,90:9.90" "R\$
   r=$(sql "select privado.ler_valor_atalho('${par%%:*}')")
   [[ "$r" == "${par##*:}" ]] && ok "le valor ${par%%:*}" || erro "valor ${par%%:*}" "$r"
 done
-for ruim in "" "abc" "0" "1,2,3"; do
+for ruim in "" "0" "1,2,3" "R\$"; do
   r=$(como anon "" "select public.atalho_lancar('$K1', '$ruim', 'x', 'Nubank')")
   [[ "$r" == *"Valor inválido"* ]] && ok "recusa valor '$ruim'" || erro "valor ruim $ruim" "$r"
 done
+# Automação da Carteira com o nome da loja no campo do valor: a mensagem explica como corrigir.
+for loja in "Mais Barato Grao" "abc"; do
+  r=$(como anon "" "select public.atalho_lancar('$K1', '$loja', '$loja', 'Nubank')")
+  [[ "$r" == *"O valor chegou como \"$loja\", que parece o nome da loja"*'escolha "Valor"'* ]] && ok "explica valor com nome da loja '$loja'" || erro "nome da loja $loja" "$r"
+done
+r=$(sql "select count(*) from public.lancamentos where descricao = 'Mais Barato Grao'")
+[[ "$r" == 0 ]] && ok "nome da loja no valor nao grava nada" || erro "gravou com nome da loja" "$r"
 
 # Categoria aprendida: mesma descrição, depois mesma primeira palavra.
 sql "insert into public.lancamentos (usuario_id, tipo, descricao, valor, conta_id, categoria_id)

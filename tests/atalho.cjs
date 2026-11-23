@@ -45,4 +45,6 @@ const corpo = app.slice(app.indexOf('async function instalarAtalho'), app.indexO
 assert.ok(corpo.indexOf('clipboard.writeText') < corpo.indexOf('location.href'), 'copia antes de abrir o link');
 assert.ok(passo.itens.some(i => /Adicionar Atalho/.test(i)), 'tutorial explica a instalacao');
 assert.ok(passo.itens.some(i => /Toque Atrás/.test(i)) && html.includes('Toque Atrás'), 'dica do Toque Atras no tutorial e no painel');
+// Guia da Carteira avisa para escolher a propriedade Valor (senao vai o nome da loja).
+assert.ok(/toque nela e escolha <strong>Valor<\/strong>/.test(html) && html.includes('nome da loja'), 'guia explica escolher Valor');
 console.log('Lancar pelo celular aprovado: tela, guia, tutorial e funcoes do banco.');

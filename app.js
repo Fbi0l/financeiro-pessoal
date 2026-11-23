@@ -329,6 +329,8 @@ function deveMostrarTutorial(metadados, vistoNoAparelho) {
    Cada aviso aparece uma única vez por pessoa (fica marcado no perfil dela e no aparelho).
    Quem entra pela primeira vez vê o guia e não recebe os avisos antigos. */
 const NOVIDADES = [
+  { id: 'carteira-valor', versao: '0.15.1', icone: '💳', titulo: 'Compra por aproximação: confira o campo do valor',
+    texto: 'Se a automação da Carteira mostrar “Valor inválido”, veja a dica nova em Contas › Lançar pelo celular › compras por aproximação: no campo p_valor, toque na variável e escolha “Valor”.' },
   { id: 'sobre-o-app', versao: '0.15.0', icone: 'ⓘ', titulo: 'Conheça o “Sobre o app”',
     texto: 'No rodapé de qualquer tela (e no menu lateral, no computador), toque em “Sobre o app” para ler por que o Financeiro foi criado e como ele protege seus dados.' },
   { id: 'toque-atras', versao: '0.14.2', icone: '⚡', titulo: 'Lance com três toques atrás do iPhone',

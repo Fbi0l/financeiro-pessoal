@@ -9,7 +9,7 @@
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#1e2547">
   <!-- Tema claro/escuro: carrega antes de tudo (sem defer) para a tela nao piscar em branco. -->
-  <script src="tema.js?v=0.15.0"></script>
+  <script src="tema.js?v=0.15.1"></script>
   <title>Financeiro</title>
   <link rel="icon" href="assets/icone.svg" type="image/svg+xml">
   <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
@@ -20,10 +20,10 @@
   <meta name="apple-mobile-web-app-title" content="Financeiro">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="application-name" content="Financeiro">
-  <link rel="stylesheet" href="styles.css?v=0.15.0">
+  <link rel="stylesheet" href="styles.css?v=0.15.1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-  <script src="importar.js?v=0.15.0" defer></script>
-  <script src="app.js?v=0.15.0" defer></script>
+  <script src="importar.js?v=0.15.1" defer></script>
+  <script src="app.js?v=0.15.1" defer></script>
 </head>
 <body>
   <div id="bootView" class="boot" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Carregando…</span></div>
@@ -39,7 +39,7 @@
       <p id="loginMessage" class="message" role="alert" aria-live="assertive"></p>
       <small>Acesso restrito ao titular. Não há cadastro aberto.</small>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.15.0 · <button class="link-rodape" type="button" data-sobre>Sobre o app</button></footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.15.1 · <button class="link-rodape" type="button" data-sobre>Sobre o app</button></footer>
   </div>
 
   <div id="conviteView" class="login-wrap hidden">
@@ -57,7 +57,7 @@
       <p id="conviteMensagem" class="message" role="alert" aria-live="assertive"></p>
       <button id="conviteIrLogin" class="secondary full hidden" type="button">Ir para o login</button>
     </form>
-    <footer class="site-footer">© 2026 Fbiol · Versão 0.15.0 · <button class="link-rodape" type="button" data-sobre>Sobre o app</button></footer>
+    <footer class="site-footer">© 2026 Fbiol · Versão 0.15.1 · <button class="link-rodape" type="button" data-sobre>Sobre o app</button></footer>
   </div>
 
   <div id="appView" class="app hidden">
@@ -72,7 +72,7 @@
       </nav>
       <div class="sidebar-bottom">
         <span id="userEmail" class="user-email"></span>
-        <small class="versao-app">Versão 0.15.0</small>
+        <small class="versao-app">Versão 0.15.1</small>
         <button class="nav-item" type="button" data-sobre><span class="nav-ico" aria-hidden="true">ⓘ</span><span>Sobre o app</span></button>
         <button id="logoutBtn" class="nav-item" type="button" aria-label="Sair" title="Sair"><span class="nav-ico" aria-hidden="true">↪</span><span>Sair</span></button>
       </div>
@@ -315,6 +315,7 @@
                 <li>Precisa do <strong>iOS 17 ou mais novo</strong> e do cartão na Carteira do iPhone. Só funciona ao pagar aproximando o iPhone da maquininha (não em compras online).</li>
                 <li>No app Atalhos, vá em <strong>Automação</strong> › <strong>+</strong> › <strong>Transação</strong>. Escolha o cartão, marque <strong>Executar Imediatamente</strong> e toque em <strong>Próximo</strong> › <strong>Novo Atalho em Branco</strong>.</li>
                 <li>Adicione <strong>Texto</strong> com a sua chave e <strong>Obter Conteúdo do URL</strong> com o <em>Endereço para lançar</em>, Método POST, cabeçalho <strong>apikey</strong> e Corpo JSON: <strong>p_chave</strong> = Texto, <strong>p_valor</strong> = Entrada do Atalho › <strong>Valor</strong>, <strong>p_descricao</strong> = Entrada do Atalho › <strong>Comerciante</strong>, <strong>p_conta</strong> = o nome da conta do app em que esse cartão deve lançar (escreva igual aparece em Contas).</li>
+                <li><strong>Importante:</strong> depois de pôr a variável <strong>Entrada do Atalho</strong> no campo <strong>p_valor</strong>, toque nela e escolha <strong>Valor</strong>; no campo <strong>p_descricao</strong>, escolha <strong>Comerciante</strong>. Sem isso, o iPhone manda o nome da loja no lugar do valor e aparece o aviso “O valor chegou como… nome da loja”.</li>
                 <li>Adicione <strong>Mostrar Notificação</strong> com o resultado. Faça uma compra pequena para testar.</li>
               </ol>
               <p class="muted"><strong>Cartão de crédito:</strong> a compra só sai do banco quando você paga a fatura. Crie uma conta para o cartão (ex.: “Cartão Nubank”, saldo 0) e use o nome dela na automação: o saldo negativo mostra quanto você deve. Ao pagar a fatura, lance uma <strong>transferência</strong> da conta do banco para a conta do cartão, assim o gasto não conta duas vezes. Se a Carteira mostrar um cartão só para crédito e débito, use a conta do cartão e corrija à mão as compras no débito.</p>
@@ -333,7 +334,7 @@
         <details id="catArquivadasBox" class="panel arquivadas hidden"><summary>Categorias arquivadas <span id="catArqQtd" class="badge"></span></summary><ul id="catArquivadas" class="chips"></ul></details>
         <p class="muted ag-aviso">Toque numa categoria para renomear, trocar a cor, arquivar ou excluir.</p>
       </section>
-      <footer class="app-footer">© 2026 Fbiol · Versão 0.15.0 · <button class="link-rodape" type="button" data-sobre>Sobre o app</button></footer>
+      <footer class="app-footer">© 2026 Fbiol · Versão 0.15.1 · <button class="link-rodape" type="button" data-sobre>Sobre o app</button></footer>
     </main>
   </div>
 
